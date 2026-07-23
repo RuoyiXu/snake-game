@@ -429,10 +429,8 @@ function toggleDevMode() {
   const pw = prompt('请输入开发者密码：');
   if (pw === '1024') {
     devMode = true;
-    saveData.devMode = true;
-    persistSave();
     updateDiffLocks();
-    alert('开发者模式已开启！所有关卡和皮肤已解锁。');
+    alert('开发者模式已开启！本次有效，刷新页面后恢复。');
   } else if (pw !== null) {
     alert('密码错误。');
   }
@@ -625,11 +623,14 @@ function loadSave() {
   if (!saveData.owned || !saveData.owned.length) saveData.owned = ['green'];
   if (!saveData.equipped || !saveData.owned.includes(saveData.equipped)) saveData.equipped = saveData.owned[0];
 }
-function persistSave() { localStorage.setItem('snake_save', JSON.stringify(saveData)); }
+function persistSave() {
+  delete saveData.devMode; // 不持久化开发者模式
+  localStorage.setItem('snake_save', JSON.stringify(saveData));
+}
 function getEquippedSkin() { return SKINS.find(s => s.id === saveData.equipped) || SKINS[0]; }
 
 loadSave();
-devMode = !!saveData.devMode;
+// devMode 不持久化，每次打开默认关闭
 
 // ==================== 画布初始化 ====================
 const isMobile = window.matchMedia('(pointer: coarse)').matches;
