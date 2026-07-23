@@ -123,7 +123,24 @@
   .diff-back { background: none; border: none; color: #999; font-size: 14px; cursor: pointer; font-family: inherit; margin-top: 4px; }
   .diff-back:active { color: #666; }
 
-  /* ====== 皮肤选择弹窗 ====== */
+  /* ====== 确认弹窗 ====== */
+  .confirm-overlay {
+    position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,0.55);
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .confirm-overlay.hidden { display: none; }
+  .confirm-card {
+    background: #fff; border-radius: 20px; padding: 28px 24px 22px;
+    max-width: 340px; width: 90%; text-align: center;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+  }
+  .confirm-card h3 { font-size: 18px; color: #555; margin-bottom: 8px; }
+  .confirm-card p { font-size: 14px; color: #999; margin-bottom: 18px; line-height: 1.5; }
+  .confirm-btns { display: flex; gap: 12px; justify-content: center; }
+  .confirm-btns button { padding: 10px 24px; border-radius: 22px; font-size: 15px; font-weight: bold; cursor: pointer; font-family: inherit; border: none; transition: transform .1s; }
+  .confirm-btns button:active { transform: scale(0.94); }
+  .confirm-btns .btn-confirm { background: #ff6e6e; color: #fff; }
+  .confirm-btns .btn-cancel { background: #f0f0f0; color: #666; }
   .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; }
   .overlay.hidden { display: none; }
   .modal { background: #fff; border-radius: 20px; padding: 24px 20px 20px; max-width: 400px; width: 100%; color: #444; text-align: center; box-shadow: 0 12px 48px rgba(0,0,0,0.18); position: relative; max-height: 90vh; overflow-y: auto; }
@@ -245,6 +262,18 @@
     <div class="skin-grid" id="shopSkinGrid"></div>
     <p id="shopMsg" style="font-size:12px;color:#888;min-height:18px;margin:4px 0;"></p>
     <button class="close-shop-btn" id="shopCloseBtn">关闭商店</button>
+  </div>
+</div>
+
+<!-- 确认重来弹窗 -->
+<div class="confirm-overlay hidden" id="confirmOverlay">
+  <div class="confirm-card">
+    <h3>⚠️ 重来</h3>
+    <p>重来会退出本局游戏<br>清空当前进度</p>
+    <div class="confirm-btns">
+      <button class="btn-cancel" id="confirmCancel">返回游戏</button>
+      <button class="btn-confirm" id="confirmOk">确认退出</button>
+    </div>
   </div>
 </div>
 
@@ -498,7 +527,7 @@ function draw() {
     ctx.lineTo(btnX, btnY + br); ctx.quadraticCurveTo(btnX, btnY, btnX + br, btnY);
     ctx.closePath(); ctx.fill();
     ctx.fillStyle = '#111'; ctx.font = 'bold 18px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
-    ctx.fillText('重新开始', canvas.width / 2, btnY + btnH / 2 + 6);
+    ctx.fillText('退出重来', canvas.width / 2, btnY + btnH / 2 + 6);
     ctx.textAlign = 'start';
   }
 
@@ -528,7 +557,7 @@ document.addEventListener('keydown', e => {
   else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D'){ e.preventDefault(); if (direction[0] !== -1) nextDirection = [1, 0]; }
   else if (e.key === ' ') { e.preventDefault(); if (!gameOver) speedBoost = true; }
   else if (e.key === 'p' || e.key === 'P') { e.preventDefault(); if (!gameOver) paused = !paused; }
-  else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); if (gameOver) reset(); }
+  else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); if (gameOver) showConfirmRestart(); }
 });
 document.addEventListener('keyup', e => {
   if (e.key === ' ') { e.preventDefault(); speedBoost = false; }
@@ -538,6 +567,27 @@ document.addEventListener('keyup', e => {
 // updateUI 时同步更新 badge
 const origUpdateUI = updateUI;
 updateUI = function() { origUpdateUI(); boostBadge.classList.toggle('active', speedBoost); };
+
+// ==================== 重来确认弹窗 ====================
+const confirmOverlay = document.getElementById('confirmOverlay');
+function showConfirmRestart() {
+  if (!gameOver) return;
+  confirmOverlay.classList.remove('hidden');
+}
+function hideConfirmRestart() {
+  confirmOverlay.classList.add('hidden');
+}
+function confirmRestart() {
+  hideConfirmRestart();
+  clearTimeout(gameLoop);
+  gameOver = true;
+  difficulty = 'medium';
+  obstacles = []; obstacleTimer = 0;
+  diffOverlay.classList.remove('hidden');
+}
+
+document.getElementById('confirmCancel').addEventListener('click', hideConfirmRestart);
+document.getElementById('confirmOk').addEventListener('click', confirmRestart);
 
 // ==================== 画布点击重新开始 ====================
 function handleCanvasRestart(cx, cy) {
@@ -551,14 +601,14 @@ function handleCanvasRestart(cx, cy) {
 canvas.addEventListener('click', e => {
   const rect = canvas.getBoundingClientRect();
   const sx = canvas.width / rect.width, sy = canvas.height / rect.height;
-  if (handleCanvasRestart((e.clientX - rect.left) * sx, (e.clientY - rect.top) * sy)) { reset(); }
+  if (handleCanvasRestart((e.clientX - rect.left) * sx, (e.clientY - rect.top) * sy)) { showConfirmRestart(); }
 });
 canvas.addEventListener('touchend', e => {
   if (!gameOver) return;
   const rect = canvas.getBoundingClientRect();
   const sx = canvas.width / rect.width, sy = canvas.height / rect.height;
   const t = e.changedTouches[0];
-  if (handleCanvasRestart((t.clientX - rect.left) * sx, (t.clientY - rect.top) * sy)) { reset(); }
+  if (handleCanvasRestart((t.clientX - rect.left) * sx, (t.clientY - rect.top) * sy)) { showConfirmRestart(); }
 }, { passive: true });
 
 // ==================== 触屏滑动 ====================
@@ -605,7 +655,7 @@ document.getElementById('btnBoost').addEventListener('pointerdown', () => { if (
 document.getElementById('btnBoost').addEventListener('pointerup', () => { speedBoost = false; });
 document.getElementById('btnBoost').addEventListener('pointerleave', () => { speedBoost = false; });
 document.getElementById('btnPause').addEventListener('click', () => { if (!gameOver) paused = !paused; });
-document.getElementById('btnRestart').addEventListener('click', () => { if (gameOver) reset(); });
+document.getElementById('btnRestart').addEventListener('click', () => { if (gameOver) showConfirmRestart(); });
 
 // ==================== 皮肤选择网格（复用组件） ====================
 function renderSkinGrid(container, onSelect) {
