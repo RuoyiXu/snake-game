@@ -120,25 +120,44 @@
   .diff-btn.hard:active { border-color: #d32f2f; background: #ffcdd2; }
   .diff-btn.locked { opacity: 0.55; }
   .diff-btn .icon { font-size: 36px; flex-shrink: 0; }
-  /* 锁链图标 */
+  /* 锁链图标：两条对角链条交叉锁住按钮 */
   .lock-badge {
-    position: absolute; top: -1px; right: -1px; bottom: -1px; left: -1px;
+    position: absolute; inset: -2px;
     pointer-events: none; overflow: hidden; border-radius: 16px;
-    display: flex; align-items: center; justify-content: center;
+    z-index: 2;
   }
-  .lock-badge::before, .lock-badge::after {
-    content: ''; position: absolute;
-    width: 120%; height: 3px;
-    background: #bbb;
+  .lock-badge .chain {
+    position: absolute;
+    /* 从左下到右上 / 从左上到右下 */
+    width: 100%; height: 100%;
+  }
+  .chain-line {
+    position: absolute;
+    height: 6px;
+    background: repeating-linear-gradient(90deg,
+      #8d7b6a 0px, #8d7b6a 6px,
+      #c4a882 6px, #c4a882 10px,
+      #8d7b6a 10px, #8d7b6a 16px
+    );
     border-radius: 3px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.3);
+    transform-origin: center center;
   }
-  .lock-badge::before { transform: rotate(35deg); }
-  .lock-badge::after  { transform: rotate(-35deg); }
-  /* 链条节点 */
-  .lock-node {
-    position: absolute; width: 10px; height: 10px;
-    background: #ccc; border: 2px solid #aaa; border-radius: 50%;
-    z-index: 1;
+  .chain-line.cl1 {
+    top: 50%; left: -10%;
+    width: 130%;
+    transform: translateY(-50%) rotate(35deg);
+  }
+  .chain-line.cl2 {
+    top: 50%; left: -10%;
+    width: 130%;
+    transform: translateY(-50%) rotate(-35deg);
+  }
+  .chain-dot {
+    position: absolute; width: 9px; height: 9px;
+    background: #b8a080; border: 2px solid #6b5d4a; border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    z-index: 3;
   }
   .diff-btn .info h3 { font-size: 17px; color: #444; margin-bottom: 2px; }
   .diff-btn .info p { font-size: 12px; color: #888; }
@@ -263,24 +282,26 @@
         <span class="icon" style="color:#ffa726;">●</span>
         <span class="info"><h3>中等模式</h3><p>正常速度，经典体验</p></span>
         <span class="lock-badge" id="lockMedium" style="display:none;">
-          <span class="lock-node" style="top:10%;left:10%;"></span>
-          <span class="lock-node" style="top:10%;right:10%;"></span>
-          <span class="lock-node" style="bottom:10%;left:10%;"></span>
-          <span class="lock-node" style="bottom:10%;right:10%;"></span>
+          <span class="chain">
+            <span class="chain-line cl1"></span>
+            <span class="chain-line cl2"></span>
+          </span>
         </span>
       </button>
       <button class="diff-btn hard" id="diffHard">
         <span class="icon" style="color:#ef5350;">●</span>
         <span class="info"><h3>困难模式</h3><p>场地中出现障碍物，碰到即死</p></span>
         <span class="lock-badge" id="lockHard" style="display:none;">
-          <span class="lock-node" style="top:10%;left:10%;"></span>
-          <span class="lock-node" style="top:10%;right:10%;"></span>
-          <span class="lock-node" style="bottom:10%;left:10%;"></span>
-          <span class="lock-node" style="bottom:10%;right:10%;"></span>
+          <span class="chain">
+            <span class="chain-line cl1"></span>
+            <span class="chain-line cl2"></span>
+          </span>
         </span>
       </button>
     </div>
     <button class="diff-back" id="diffBack">← 返回首页</button>
+    <!-- 开发者入口 -->
+    <button id="devBtn" style="background:none;border:none;color:#ccc;font-size:12px;cursor:pointer;margin-top:4px;display:block;margin-left:auto;margin-right:auto;">开发者模式</button>
     <!-- 解锁提示浮层 -->
     <div id="lockTip" style="display:none; position:absolute; bottom:70px; left:50%; transform:translateX(-50%); background:#fff; border-radius:12px; padding:12px 32px 12px 16px; box-shadow:0 4px 20px rgba(0,0,0,0.18); font-size:13px; color:#666; white-space:nowrap; z-index:5;">
       <span id="lockTipMsg"></span>
@@ -395,11 +416,26 @@ function sfxDeath() {
 function getMaxBeans(mode) {
   return (saveData.unlocks && saveData.unlocks[mode]) || 0;
 }
+// 开发者模式
+let devMode = !!saveData.devMode;
 function isDiffUnlocked(mode) {
+  if (devMode) return true;
   if (mode === 'easy') return true;
   if (mode === 'medium') return getMaxBeans('easy') >= 10;
   if (mode === 'hard') return getMaxBeans('medium') >= 10;
   return false;
+}
+function toggleDevMode() {
+  const pw = prompt('请输入开发者密码：');
+  if (pw === '1024') {
+    devMode = true;
+    saveData.devMode = true;
+    persistSave();
+    updateDiffLocks();
+    alert('开发者模式已开启！所有关卡和皮肤已解锁。');
+  } else if (pw !== null) {
+    alert('密码错误。');
+  }
 }
 function getUnlockHint(mode) {
   if (mode === 'medium') return '在简单模式中吃到 10 个豆即可解锁';
@@ -1075,7 +1111,7 @@ document.getElementById('btnRestart').addEventListener('click', () => { sfxClick
 function renderSkinGrid(container, onSelect) {
   container.innerHTML = '';
   SKINS.forEach(skin => {
-    const owned = saveData.owned.includes(skin.id);
+    const owned = devMode || saveData.owned.includes(skin.id);
     const equipped = saveData.equipped === skin.id;
     const div = document.createElement('div');
     div.className = 'skin-item' + (equipped ? ' selected' : '') + (!owned ? ' locked' : '');
@@ -1343,6 +1379,9 @@ document.getElementById('diffBack').addEventListener('click', () => {
   document.getElementById('lockTip').style.display = 'none';
   homeOverlay.classList.remove('hidden');
   startHomeBg();
+});
+document.getElementById('devBtn').addEventListener('click', () => {
+  toggleDevMode();
 });
 
 // 选择难度 → 进入皮肤选择
