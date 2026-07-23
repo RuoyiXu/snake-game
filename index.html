@@ -120,7 +120,26 @@
   .diff-btn.hard:active { border-color: #d32f2f; background: #ffcdd2; }
   .diff-btn.locked { opacity: 0.55; }
   .diff-btn .icon { font-size: 36px; flex-shrink: 0; }
-  .lock-badge { position: absolute; top: 4px; right: 8px; font-size: 14px; }
+  /* 锁链图标 */
+  .lock-badge {
+    position: absolute; top: -1px; right: -1px; bottom: -1px; left: -1px;
+    pointer-events: none; overflow: hidden; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .lock-badge::before, .lock-badge::after {
+    content: ''; position: absolute;
+    width: 120%; height: 3px;
+    background: #bbb;
+    border-radius: 3px;
+  }
+  .lock-badge::before { transform: rotate(35deg); }
+  .lock-badge::after  { transform: rotate(-35deg); }
+  /* 链条节点 */
+  .lock-node {
+    position: absolute; width: 10px; height: 10px;
+    background: #ccc; border: 2px solid #aaa; border-radius: 50%;
+    z-index: 1;
+  }
   .diff-btn .info h3 { font-size: 17px; color: #444; margin-bottom: 2px; }
   .diff-btn .info p { font-size: 12px; color: #888; }
   .diff-back { background: none; border: none; color: #999; font-size: 14px; cursor: pointer; font-family: inherit; margin-top: 4px; }
@@ -243,12 +262,22 @@
       <button class="diff-btn medium" id="diffMedium">
         <span class="icon" style="color:#ffa726;">●</span>
         <span class="info"><h3>中等模式</h3><p>正常速度，经典体验</p></span>
-        <span class="lock-badge" id="lockMedium" style="display:none;">锁</span>
+        <span class="lock-badge" id="lockMedium" style="display:none;">
+          <span class="lock-node" style="top:10%;left:10%;"></span>
+          <span class="lock-node" style="top:10%;right:10%;"></span>
+          <span class="lock-node" style="bottom:10%;left:10%;"></span>
+          <span class="lock-node" style="bottom:10%;right:10%;"></span>
+        </span>
       </button>
       <button class="diff-btn hard" id="diffHard">
         <span class="icon" style="color:#ef5350;">●</span>
         <span class="info"><h3>困难模式</h3><p>场地中出现障碍物，碰到即死</p></span>
-        <span class="lock-badge" id="lockHard" style="display:none;">锁</span>
+        <span class="lock-badge" id="lockHard" style="display:none;">
+          <span class="lock-node" style="top:10%;left:10%;"></span>
+          <span class="lock-node" style="top:10%;right:10%;"></span>
+          <span class="lock-node" style="bottom:10%;left:10%;"></span>
+          <span class="lock-node" style="bottom:10%;right:10%;"></span>
+        </span>
       </button>
     </div>
     <button class="diff-back" id="diffBack">← 返回首页</button>
@@ -587,8 +616,10 @@ const boostBadge = document.getElementById('boostBadge');
 let snake, direction, nextDirection, food, score, highScore, gameOver, paused, speedBoost;
 let gameLoop, touchStartX, touchStartY;
 let difficulty = 'medium'; // 'easy' | 'medium' | 'hard'
-let obstacles = [];        // 障碍物 [{x, y, timer}]
+let obstacles = [];        // [{cells:[{x,y},...], state:'spawning'|'solid'|'despawning', timer:frames}]
 let obstacleTimer = 0;
+const OBS_SPAWN_TIME = 5 * 10; // 5秒渐显（10fps基准）
+const OBS_DESPAWN_TIME = 3 * 10; // 3秒渐隐
 
 function updateCoinDisplay() {
   coinsEl.textContent = `金币 ${saveData.coins}`;
@@ -637,8 +668,17 @@ function update() {
 
   // 自身碰撞
   if (snake.some(([x, y]) => x === nx && y === ny)) { endGame(); return; }
-  // 障碍物碰撞
-  if (difficulty === 'hard' && obstacles.some(o => o.x === nx && o.y === ny)) { endGame(); return; }
+  // 障碍物碰撞（仅实体状态会致死）
+  if (difficulty === 'hard') {
+    for (const obs of obstacles) {
+      if (obs.state !== 'solid') continue;
+      if (obs.cells.some(c => c.x === nx && c.y === ny)) { endGame(); return; }
+      // 检测蛇身是否碰到实体障碍物
+      if (snake.some(([sx, sy], i) => i > 0 && obs.cells.some(c => c.x === sx && c.y === sy))) {
+        // 蛇头已过，再检查蛇身（蛇头移动后身体仍在原处）
+      }
+    }
+  }
 
   snake.unshift([nx, ny]);
   if (nx === food[0] && ny === food[1]) {
@@ -647,27 +687,64 @@ function update() {
     sfxEat();
     spawnFood();
   } else { snake.pop(); }
+
+  // 碰撞检测：蛇整体（含新位置后的身体）碰到实体障碍物
+  if (difficulty === 'hard') {
+    for (const obs of obstacles) {
+      if (obs.state !== 'solid') continue;
+      if (snake.some(([sx, sy]) => obs.cells.some(c => c.x === sx && c.y === sy))) {
+        endGame(); return;
+      }
+    }
+  }
+
   updateUI();
 
   // 障碍物管理
   if (difficulty === 'hard') {
     obstacleTimer++;
-    // 每 25 帧尝试生成障碍物，场上最多 3 个
-    if (obstacleTimer % 25 === 0 && obstacles.length < 3 && snake.length > 2) {
+    // 场上最多 4 组障碍物
+    if (obstacleTimer % 28 === 0 && obstacles.length < 4 && snake.length > 2) {
       const crowd = new Set(snake.map(([x, y]) => `${x},${y}`));
       crowd.add(`${food[0]},${food[1]}`);
-      // 在场地中央区域生成
-      for (let t = 0; t < 30; t++) {
-        const ox = Math.floor(Math.random() * 8) + 6; // 6-13 列
-        const oy = Math.floor(Math.random() * 8) + 6; // 6-13 行
-        if (!crowd.has(`${ox},${oy}`) && !obstacles.some(o => o.x === ox && o.y === oy)) {
-          obstacles.push({ x: ox, y: oy, life: 50 + Math.floor(Math.random() * 30) }); // 持续 50-80 帧
+      // 生成链条状障碍物（2-5个相连格子）
+      const chainLen = 1 + Math.floor(Math.random() * 5);
+      for (let t = 0; t < 50; t++) {
+        const sx = Math.floor(Math.random() * 12) + 4;
+        const sy = Math.floor(Math.random() * 12) + 4;
+        const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+        const dir = dirs[Math.floor(Math.random() * 4)];
+        const cells = [];
+        let cx = sx, cy = sy;
+        let valid = true;
+        for (let i = 0; i < chainLen; i++) {
+          if (cx < 0 || cx >= COLS || cy < 0 || cy >= ROWS) { valid = false; break; }
+          if (crowd.has(`${cx},${cy}`)) { valid = false; break; }
+          if (obstacles.some(o => o.cells.some(c => c.x === cx && c.y === cy))) { valid = false; break; }
+          cells.push({ x: cx, y: cy });
+          crowd.add(`${cx},${cy}`);
+          cx += dir[0]; cy += dir[1];
+        }
+        if (valid && cells.length >= 1) {
+          obstacles.push({ cells, state: 'spawning', timer: OBS_SPAWN_TIME });
           break;
         }
       }
     }
-    // 障碍物倒计时
-    obstacles = obstacles.filter(o => { o.life--; return o.life > 0; });
+    // 障碍物状态更新
+    obstacles = obstacles.filter(o => {
+      o.timer--;
+      if (o.state === 'spawning' && o.timer <= 0) {
+        o.state = 'solid';
+        o.timer = 60 + Math.floor(Math.random() * 40); // 实体持续 6-10 秒
+      } else if (o.state === 'solid' && o.timer <= 0) {
+        o.state = 'despawning';
+        o.timer = OBS_DESPAWN_TIME;
+      } else if (o.state === 'despawning' && o.timer <= 0) {
+        return false;
+      }
+      return true;
+    });
   }
 }
 
@@ -742,16 +819,64 @@ function draw() {
 
   // 障碍物（困难模式）
   obstacles.forEach(o => {
-    const ox = o.x * CELL + 2, oy = o.y * CELL + 2, os = CELL - 4;
-    const alpha = o.life < 15 ? 0.3 + (o.life / 15) * 0.5 : 0.8; // 快消失时闪烁
-    ctx.fillStyle = `rgba(100,80,60,${alpha})`;
-    ctx.fillRect(ox, oy, os, os);
-    // 尖刺装饰
-    ctx.fillStyle = `rgba(160,60,40,${alpha})`;
-    ctx.beginPath();
-    ctx.moveTo(ox + os/2, oy); ctx.lineTo(ox + os, oy + os/2);
-    ctx.lineTo(ox + os/2, oy + os); ctx.lineTo(ox, oy + os/2);
-    ctx.closePath(); ctx.fill();
+    const isSpawning = o.state === 'spawning';
+    const isDespawning = o.state === 'despawning';
+    const isSolid = o.state === 'solid';
+
+    // 计算透明度
+    let alpha, borderAlpha;
+    if (isSpawning) {
+      // 渐显：0→1 在 OBS_SPAWN_TIME 帧内
+      const progress = 1 - (o.timer / OBS_SPAWN_TIME);
+      alpha = 0.15 + progress * 0.25;
+      borderAlpha = progress * 0.5;
+    } else if (isDespawning) {
+      // 渐隐
+      const progress = o.timer / OBS_DESPAWN_TIME;
+      alpha = 0.15 + progress * 0.25;
+      borderAlpha = progress * 0.5;
+    } else {
+      // 实体
+      alpha = 0.7;
+      borderAlpha = 1.0;
+    }
+
+    o.cells.forEach(c => {
+      const ox = c.x * CELL + 2, oy = c.y * CELL + 2, os = CELL - 4;
+      // 填充
+      ctx.fillStyle = `rgba(100,80,60,${alpha})`;
+      ctx.fillRect(ox, oy, os, os);
+      // 尖刺X
+      ctx.fillStyle = `rgba(160,60,40,${alpha})`;
+      ctx.beginPath();
+      ctx.moveTo(ox + os/2, oy); ctx.lineTo(ox + os, oy + os/2);
+      ctx.lineTo(ox + os/2, oy + os); ctx.lineTo(ox, oy + os/2);
+      ctx.closePath(); ctx.fill();
+
+      // 实体状态边框特效
+      if (isSolid) {
+        ctx.strokeStyle = `rgba(255,80,50,${0.5 + 0.5 * Math.sin(frame * 0.2)})`;
+        ctx.lineWidth = 3;
+        ctx.strokeRect(ox - 0.5, oy - 0.5, os + 1, os + 1);
+        // 外发光
+        ctx.strokeStyle = `rgba(255,120,80,${0.3 + 0.3 * Math.sin(frame * 0.3 + 1)})`;
+        ctx.lineWidth = 5;
+        ctx.strokeRect(ox - 2.5, oy - 2.5, os + 5, os + 5);
+      } else if (isSpawning) {
+        // 幽灵闪烁边框
+        ctx.strokeStyle = `rgba(200,180,150,${0.3 + 0.25 * Math.sin(frame * 0.4)})`;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 4]);
+        ctx.strokeRect(ox - 0.5, oy - 0.5, os + 1, os + 1);
+        ctx.setLineDash([]);
+      } else if (isDespawning) {
+        ctx.strokeStyle = `rgba(200,100,80,${0.2 + 0.2 * Math.sin(frame * 0.3)})`;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([3, 5]);
+        ctx.strokeRect(ox - 0.5, oy - 0.5, os + 1, os + 1);
+        ctx.setLineDash([]);
+      }
+    });
   });
 
   // 蛇（应用皮肤）
