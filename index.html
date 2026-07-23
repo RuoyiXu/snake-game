@@ -350,42 +350,45 @@ function toggleMute() {
 // ==================== 首页 BGM（轻松欢快） ====================
 let homeBGM = null;
 function startHomeBGM() {
+  if (homeBGM) return; // 已在播放，不重新开始
   currentBGM = 'home';
   if (bgmMuted) return;
   try {
     const ctx = ensureAudio();
-    stopHomeBGM();
     const masterGain = ctx.createGain();
-    masterGain.gain.value = 0.09;
+    masterGain.gain.value = 0.07;
     masterGain.connect(ctx.destination);
 
-    // 简单旋律循环（C大调音阶风格）
-    const notes = [523,659,784,659,523,587,659,523, 440,523,587,523,440,392,440,523];
-    const noteLen = 0.25;
-    const loopLen = notes.length * noteLen;
-    let startTime = ctx.currentTime + 0.2;
+    // 舒缓五声音阶旋律（C大调：C D E G A）
+    const pentatonic = [523, 587, 659, 784, 880];
+    // 轻柔的旋律线，每音持续 0.55 秒
+    const melody = [2,3,4,3, 2,1,2,0, 3,4,3,2, 1,0,1,2, 4,3,2,1, 2,3,4,2, 1,0,2,1, 0,2,3,4]; // 索引到 pentatonic
+    const noteLen = 0.55;
+    const loopLen = melody.length * noteLen;
+    let startTime = ctx.currentTime + 0.3;
 
     function scheduleLoop() {
       if (!homeBGM || homeBGM.stopped) return;
       const t = startTime;
-      notes.forEach((freq, i) => {
+      melody.forEach((idx, i) => {
+        const freq = pentatonic[idx];
         const o = ctx.createOscillator(); const g = ctx.createGain();
-        o.type = 'triangle';
+        o.type = 'sine';
         o.frequency.value = freq;
         const nt = t + i * noteLen;
         g.gain.setValueAtTime(0, nt);
-        g.gain.linearRampToValueAtTime(0.8, nt + 0.02);
-        g.gain.linearRampToValueAtTime(0.5, nt + noteLen * 0.7);
+        g.gain.linearRampToValueAtTime(0.55, nt + 0.06);
+        g.gain.linearRampToValueAtTime(0.35, nt + noteLen * 0.65);
         g.gain.exponentialRampToValueAtTime(0.001, nt + noteLen);
         o.connect(g); g.connect(masterGain);
         o.start(nt); o.stop(nt + noteLen);
       });
-      // 低音和弦
+      // 柔和和弦铺底（C大三和弦，圆润正弦波）
       [262, 330, 392].forEach(freq => {
         const o = ctx.createOscillator(); const g = ctx.createGain();
         o.type = 'sine'; o.frequency.value = freq;
-        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.25, t + 0.02);
-        g.gain.linearRampToValueAtTime(0.2, t + loopLen * 0.6);
+        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.15, t + 0.1);
+        g.gain.linearRampToValueAtTime(0.12, t + loopLen * 0.7);
         g.gain.exponentialRampToValueAtTime(0.001, t + loopLen);
         o.connect(g); g.connect(masterGain);
         o.start(t); o.stop(t + loopLen);
@@ -405,6 +408,7 @@ function stopHomeBGM() {
 // ==================== 游戏 BGM（鼓点强节奏感） ====================
 let gameBGM = null;
 function startGameBGM() {
+  if (gameBGM) return; // 已在播放，不重新开始
   currentBGM = 'game';
   if (bgmMuted) return;
   try {
@@ -1116,7 +1120,6 @@ function animateHomeBg() {
 function startHomeBg() {
   initHomeBg();
   animateHomeBg();
-  startHomeBGM();
 }
 function stopHomeBg() {
   if (bgAnimId) cancelAnimationFrame(bgAnimId);
@@ -1268,8 +1271,9 @@ function init() {
   spawnFood();
   updateUI();
   draw();
-  // 启动首页背景动画
+  // 启动首页背景动画和音乐
   startHomeBg();
+  startHomeBGM();
   // 窗口缩放时重绘背景
   window.addEventListener('resize', () => {
     if (!homeOverlay.classList.contains('hidden')) initHomeBg();
