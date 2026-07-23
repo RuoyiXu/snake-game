@@ -359,7 +359,7 @@ let powerups=[],activePowerups={};
 let replayFrames=[],isReplaying=false,replayIndex=0;
 let aiMode=false,aiSnake=null,aiScore=0,aiDir=[1,0],aiAlive=true;
 // Boss 模式
-let boss=null; // {x,y,w,h,targetX,targetY,moveTimer,speed}
+let boss=null; // {x,y,w,h,moveTimer}
 // 体力系统
 const MAX_STAMINA = 100;
 let stamina = MAX_STAMINA;       // 玩家体力
@@ -377,7 +377,8 @@ function reset(){
   replayFrames=[];replayIndex=0;isReplaying=false;
   stamina=MAX_STAMINA;aiStamina=MAX_STAMINA;aiBoosting=false;
   // Boss 初始化
-  if(difficulty==='boss'){boss={x:14,y:14,w:3,h:3,moveTimer:0,speed:20}}
+  bossPhase=1;bossPhaseTimer=0;bossBurstSteps=0;
+  if(difficulty==='boss'){boss={x:14,y:14,w:3,h:3,moveTimer:0}}
   else{boss=null}
   if(aiMode&&!isReplaying){
     aiSnake=[[sx+2,sy]];aiScore=0;aiDir=[1,0];aiAlive=true;
@@ -459,22 +460,54 @@ function updateAIPanel(){
 }
 
 // ==================== Boss 更新 ====================
+let bossPhase=1,bossPhaseTimer=0,bossBurstSteps=0;
+function getBossPhase(){
+  if(score<40)return 1;  // 巡逻期
+  if(score<80)return 2;  // 追踪期
+  if(score<130)return 3; // 狂暴期
+  return 4;              // 地狱期
+}
 function updateBoss(){
   if(!boss||difficulty!=='boss')return;
-  boss.moveTimer++;
-  // 分数越高 Boss 越快
-  const speed=Math.max(5,20-Math.floor(score/50)*3);
-  if(boss.moveTimer<speed)return;
-  boss.moveTimer=0;
-  // 向蛇头方向移动一格
+  const phase=getBossPhase();
+  bossPhaseTimer++;
+  // 各阶段速度不同
+  const speedMap={1:25,2:18,3:10,4:6};
+  const speed=speedMap[phase]||20;
+  if(bossPhaseTimer<speed)return;
+  bossPhaseTimer=0;
+  if(phase!==bossPhase){bossPhase=phase;showToast(`Boss 进入第 ${phase} 阶段！`)}
   const head=snake[0];
   const bx=boss.x+Math.floor(boss.w/2),by=boss.y+Math.floor(boss.h/2);
   let dx=0,dy=0;
-  if(head[0]>bx)dx=1;else if(head[0]<bx)dx=-1;
-  if(head[1]>by)dy=1;else if(head[1]<by)dy=-1;
-  // 随机选择一个方向移动（优先向蛇靠近）
-  if(Math.random()<.6){if(dx!==0){boss.x=Math.max(0,Math.min(COLS-boss.w,boss.x+dx))}}
-  else{if(dy!==0){boss.y=Math.max(0,Math.min(ROWS-boss.h,boss.y+dy))}}
+  if(phase===1){
+    // 巡逻：随机漫步，偶尔向蛇靠近
+    if(Math.random()<.3){if(head[0]>bx)dx=1;else if(head[0]<bx)dx=-1}
+    else if(Math.random()<.3){if(head[1]>by)dy=1;else if(head[1]<by)dy=-1}
+    else{dx=[-1,0,1][Math.floor(Math.random()*3)];dy=[-1,0,1][Math.floor(Math.random()*3)]}
+  }else if(phase===2){
+    // 追踪：主动追蛇
+    if(head[0]>bx)dx=1;else if(head[0]<bx)dx=-1;
+    if(head[1]>by)dy=1;else if(head[1]<by)dy=-1;
+    if(Math.random()<.25){dx=[-1,0,1][Math.floor(Math.random()*3)];dy=[-1,0,1][Math.floor(Math.random()*3)]}
+  }else if(phase===3){
+    // 狂暴：快速追踪 + 连续冲刺
+    if(head[0]>bx)dx=1;else if(head[0]<bx)dx=-1;
+    if(head[1]>by)dy=1;else if(head[1]<by)dy=-1;
+    bossBurstSteps++;
+    if(bossBurstSteps>3&&bossBurstSteps<5){dx*=2;dy*=2} // 冲刺
+    if(bossBurstSteps>=5)bossBurstSteps=0;
+  }else{
+    // 地狱：高速 + 预判蛇的移动方向
+    if(direction[0]===1)dx=1;else if(direction[0]===-1)dx=-1;
+    if(direction[1]===1)dy=1;else if(direction[1]===-1)dy=-1;
+    // 偶尔也向蛇头靠近
+    if(Math.random()<.4){if(head[0]>bx)dx=1;else if(head[0]<bx)dx=-1}
+    if(Math.random()<.4){if(head[1]>by)dy=1;else if(head[1]<by)dy=-1}
+  }
+  // 执行移动
+  boss.x=Math.max(0,Math.min(COLS-boss.w,boss.x+dx));
+  boss.y=Math.max(0,Math.min(ROWS-boss.h,boss.y+dy));
 }
 function checkBossCollision(nx,ny){
   if(!boss||difficulty!=='boss')return false;
@@ -718,9 +751,11 @@ function draw(){
     ctx.fillStyle='#fff';ctx.font=`bold ${CELL}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillText('☠',bx+bw/2,by+bh/2);ctx.textAlign='start';
     // Boss 名称标签
-    const speed=Math.max(5,20-Math.floor(score/50)*3);
-    ctx.fillStyle='#ff4060';ctx.font='bold 11px sans-serif';
-    ctx.fillText(`BOSS Lv.${Math.floor(score/50)+1}`,bx+4,by-6);
+    const phaseLabels=['','巡逻','追踪','狂暴','地狱'];
+    const phaseColors=['','#ff8844','#ff4444','#ff00cc','#ff0000'];
+    const p=getBossPhase();
+    ctx.fillStyle=phaseColors[p];ctx.font='bold 11px sans-serif';
+    ctx.fillText(`BOSS ${phaseLabels[p]}`,bx+4,by-6);
   }
 
   // 蛇
