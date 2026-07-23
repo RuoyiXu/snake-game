@@ -11,10 +11,13 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
-    height: 100dvh;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 20px 0 80px 0;
+    padding-bottom: max(80px, env(safe-area-inset-bottom, 80px));
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
     touch-action: none;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
@@ -24,7 +27,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
   }
   .header {
     display: flex;
@@ -59,31 +62,32 @@
   /* 触屏虚拟方向键 */
   .dpad {
     display: none;
-    width: 200px;
-    height: 200px;
+    width: 180px;
+    height: 180px;
     position: relative;
-    margin-top: 6px;
+    margin-top: 8px;
+    margin-bottom: 24px;
   }
   .dpad button {
     position: absolute;
-    width: 60px;
-    height: 60px;
+    width: 56px;
+    height: 56px;
     border: none;
-    border-radius: 12px;
-    background: rgba(255,255,255,0.08);
+    border-radius: 28px;
+    background: rgba(255,255,255,0.12);
     color: #ccc;
-    font-size: 26px;
+    font-size: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
   }
-  .dpad button:active { background: rgba(255,255,255,0.2); }
-  .dpad .btn-up    { top: 0;   left: 70px; }
-  .dpad .btn-down  { bottom: 0; left: 70px; }
-  .dpad .btn-left  { top: 70px; left: 0; }
-  .dpad .btn-right { top: 70px; right: 0; }
+  .dpad button:active { background: rgba(255,255,255,0.28); }
+  .dpad .btn-up    { top: 0;   left: 62px; }
+  .dpad .btn-down  { bottom: 0; left: 62px; }
+  .dpad .btn-left  { top: 62px; left: 0; }
+  .dpad .btn-right { top: 62px; right: 0; }
 
   .footer {
     display: flex;
@@ -140,9 +144,12 @@
 
 <script>
 // ==================== 常量 ====================
-const CELL = 28;
+// 根据屏幕宽度自适应格子大小
+const isMobile = window.matchMedia('(pointer: coarse)').matches;
+const maxCanvasSize = isMobile ? Math.min(window.innerWidth - 20, 420) : 560;
 const COLS = 20;
 const ROWS = 20;
+const CELL = Math.floor(maxCanvasSize / COLS);
 const FPS = 10;
 const BOOST_MULTI = 2;
 
