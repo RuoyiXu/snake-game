@@ -365,7 +365,7 @@ function reset(){
   snake=[[sx,sy]];direction=[1,0];nextDirection=[1,0];
   score=0;gameOver=false;paused=false;speedBoost=false;
   obstacles=[];obstacleTimer=0;powerups=[];activePowerups={};gameBeans=0;
-  replayFrames=[];replayIndex=0;
+  replayFrames=[];replayIndex=0;isReplaying=false;
   stamina=MAX_STAMINA;aiStamina=MAX_STAMINA;aiBoosting=false;
   if(aiMode&&!isReplaying){
     aiSnake=[[sx+2,sy]];aiScore=0;aiDir=[1,0];aiAlive=true;
@@ -471,9 +471,8 @@ function updateStamina(){
   updateStaminaUI();
 }
 function updateStaminaUI(){
-  document.getElementById('staminaFill').style.width=(stamina/MAX_STAMINA*100)+'%';
-  document.getElementById('staminaFill').style.background=stamina<20?'#ff5252':'#ffd740';
-  if(aiMode&&!isReplaying){document.getElementById('aiStaminaFill').style.width=(aiStamina/MAX_STAMINA*100)+'%'}
+  const sf=document.getElementById('staminaFill');if(sf){sf.style.width=(stamina/MAX_STAMINA*100)+'%';sf.style.background=stamina<20?'#ff5252':'#ffd740'}
+  if(aiMode&&!isReplaying){const af=document.getElementById('aiStaminaFill');if(af)af.style.width=(aiStamina/MAX_STAMINA*100)+'%'}
 }
 function canBoost(){return stamina>5}
 
