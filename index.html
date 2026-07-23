@@ -185,7 +185,7 @@
     </div>
     <div class="header-right">
       <span class="boost-badge" id="boostBadge">⚡ 加速中</span>
-      <button class="header-btn" id="headerShopBtn">🏪 商店</button>
+      <button class="header-btn" id="muteBtn">🔊</button>
     </div>
   </div>
   <canvas id="canvas"></canvas>
@@ -332,9 +332,28 @@ function sfxDeath() {
   } catch(e) {}
 }
 
+// ==================== BGM 静音控制 ====================
+let bgmMuted = false;
+function toggleMute() {
+  bgmMuted = !bgmMuted;
+  const muteBtn = document.getElementById('muteBtn');
+  muteBtn.textContent = bgmMuted ? '🔇' : '🔊';
+  if (bgmMuted) {
+    stopHomeBGM();
+    stopGameBGM();
+  } else {
+    // 根据当前所在场景恢复 BGM
+    if (!homeOverlay.classList.contains('hidden')) startHomeBGM();
+    else if (!skinOverlay.classList.contains('hidden') || gameOver || (!gameOver && !paused)) {
+      // 游戏中
+    }
+  }
+}
+
 // ==================== 首页 BGM（轻松欢快） ====================
 let homeBGM = null;
 function startHomeBGM() {
+  if (bgmMuted) return;
   try {
     const ctx = ensureAudio();
     stopHomeBGM();
@@ -387,6 +406,7 @@ function stopHomeBGM() {
 // ==================== 游戏 BGM（鼓点强节奏感） ====================
 let gameBGM = null;
 function startGameBGM() {
+  if (bgmMuted) return;
   try {
     const ctx = ensureAudio();
     stopGameBGM();
@@ -745,13 +765,23 @@ document.addEventListener('keydown', e => {
   else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') { e.preventDefault(); if (direction[0] !== 1)  { nextDirection = [-1, 0]; sfxClick(); } }
   else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D'){ e.preventDefault(); if (direction[0] !== -1) { nextDirection = [1, 0]; sfxClick(); } }
   else if (e.key === ' ') { e.preventDefault(); if (!gameOver) { speedBoost = true; sfxClick(); } }
-  else if (e.key === 'p' || e.key === 'P') { e.preventDefault(); if (!gameOver) { paused = !paused; sfxClick(); } }
+  else if (e.key === 'p' || e.key === 'P') { e.preventDefault(); togglePause(); }
   else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); showConfirmRestart(); sfxClick(); }
 });
 document.addEventListener('keyup', e => {
   if (e.key === ' ') { e.preventDefault(); speedBoost = false; }
   boostBadge.classList.toggle('active', speedBoost);
 });
+
+// ==================== 暂停 / 静音 ====================
+function togglePause() {
+  if (gameOver) return;
+  sfxClick();
+  paused = !paused;
+  if (paused) { stopGameBGM(); }
+  else { startGameBGM(); }
+}
+document.getElementById('muteBtn').addEventListener('click', () => { sfxClick(); toggleMute(); });
 
 // updateUI 时同步更新 badge
 const origUpdateUI = updateUI;
@@ -766,7 +796,7 @@ function showConfirmRestart() {
 }
 function hideConfirmRestart() {
   confirmOverlay.classList.add('hidden');
-  if (wasPausedByConfirm) { paused = false; wasPausedByConfirm = false; }
+  if (wasPausedByConfirm) { paused = false; wasPausedByConfirm = false; startGameBGM(); }
 }
 function confirmRestart() {
   hideConfirmRestart();
@@ -856,7 +886,7 @@ bindDpad('btnUp', [0, -1]); bindDpad('btnDown', [0, 1]); bindDpad('btnLeft', [-1
 document.getElementById('btnBoost').addEventListener('pointerdown', () => { sfxClick(); if (!gameOver) speedBoost = true; });
 document.getElementById('btnBoost').addEventListener('pointerup', () => { speedBoost = false; });
 document.getElementById('btnBoost').addEventListener('pointerleave', () => { speedBoost = false; });
-document.getElementById('btnPause').addEventListener('click', () => { sfxClick(); if (!gameOver) paused = !paused; });
+document.getElementById('btnPause').addEventListener('click', () => { togglePause(); });
 document.getElementById('btnRestart').addEventListener('click', () => { sfxClick(); showConfirmRestart(); });
 
 // ==================== 皮肤选择网格（复用组件） ====================
@@ -1193,7 +1223,6 @@ function closeShop() {
 
 document.getElementById('shopClose').addEventListener('click', () => { sfxClick(); closeShop(); });
 document.getElementById('shopCloseBtn').addEventListener('click', () => { sfxClick(); closeShop(); });
-document.getElementById('headerShopBtn').addEventListener('click', () => { sfxClick(); openShop(); });
 document.getElementById('footerShopBtn').addEventListener('click', () => { sfxClick(); openShop(); });
 
 function renderShopGrid() {
