@@ -283,18 +283,18 @@ let audioCtx = null;
 function ensureAudio() {
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    // 用户首次交互时恢复 AudioContext
-    document.addEventListener('click', () => { if (audioCtx.state === 'suspended') audioCtx.resume(); }, { once: true });
-    document.addEventListener('touchend', () => { if (audioCtx.state === 'suspended') audioCtx.resume(); }, { once: true });
-    document.addEventListener('keydown', () => { if (audioCtx.state === 'suspended') audioCtx.resume(); }, { once: true });
-  }
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume().then(() => {
-      // 恢复后，如果首页可见且BGM未开始，则启动
-      if (!homeOverlay.classList.contains('hidden') && !homeBGM) startHomeBGM();
-    });
   }
   return audioCtx;
+}
+
+// 浏览器禁止自动播放，监听首次用户交互后恢复 AudioContext
+function initAudioAutoplay() {
+  const resume = () => {
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  };
+  document.addEventListener('click', resume, { once: true });
+  document.addEventListener('touchend', resume, { once: true });
+  document.addEventListener('keydown', resume, { once: true });
 }
 
 // 短促清脆点击音效
@@ -1264,6 +1264,7 @@ function renderShopGrid() {
 
 // ==================== 启动 ====================
 function init() {
+  initAudioAutoplay();
   updateCoinDisplay();
   // 渲染初始静态画面
   snake = [[Math.floor(COLS/2), Math.floor(ROWS/2)]];
@@ -1273,8 +1274,9 @@ function init() {
   spawnFood();
   updateUI();
   draw();
-  // 启动首页背景动画和音乐
+  // 启动首页背景动画
   startHomeBg();
+  // 尝试启动BGM（若被浏览器拦截则等用户交互后自动恢复）
   startHomeBGM();
   // 窗口缩放时重绘背景
   window.addEventListener('resize', () => {
