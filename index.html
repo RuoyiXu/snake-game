@@ -281,8 +281,19 @@
 // ==================== 音效系统 ====================
 let audioCtx = null;
 function ensureAudio() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  if (audioCtx.state === 'suspended') audioCtx.resume();
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // 用户首次交互时恢复 AudioContext
+    document.addEventListener('click', () => { if (audioCtx.state === 'suspended') audioCtx.resume(); }, { once: true });
+    document.addEventListener('touchend', () => { if (audioCtx.state === 'suspended') audioCtx.resume(); }, { once: true });
+    document.addEventListener('keydown', () => { if (audioCtx.state === 'suspended') audioCtx.resume(); }, { once: true });
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume().then(() => {
+      // 恢复后，如果首页可见且BGM未开始，则启动
+      if (!homeOverlay.classList.contains('hidden') && !homeBGM) startHomeBGM();
+    });
+  }
   return audioCtx;
 }
 
@@ -344,10 +355,11 @@ function toggleMute() {
 
 // ==================== 首页 BGM（轻松欢快） ====================
 let homeBGM = null;
-function startHomeBGM() {
+async function startHomeBGM() {
   if (homeBGM) return; // 已在播放，不重新开始
   try {
     const ctx = ensureAudio();
+    if (ctx.state === 'suspended') await ctx.resume();
     const masterGain = ctx.createGain();
     masterGain.gain.value = bgmMuted ? 0 : 0.07;
     masterGain.connect(ctx.destination);
@@ -399,10 +411,11 @@ function stopHomeBGM() {
 
 // ==================== 游戏 BGM（鼓点强节奏感） ====================
 let gameBGM = null;
-function startGameBGM() {
+async function startGameBGM() {
   if (gameBGM) return; // 已在播放，不重新开始
   try {
     const ctx = ensureAudio();
+    if (ctx.state === 'suspended') await ctx.resume();
     stopGameBGM();
     const masterGain = ctx.createGain();
     masterGain.gain.value = bgmMuted ? 0 : 0.12;
