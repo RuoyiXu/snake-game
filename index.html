@@ -228,6 +228,10 @@ function update() {
 
   if (nx === food[0] && ny === food[1]) {
     score += 10;
+    // 如果超越历史最高分，实时更新
+    if (score > highScore) {
+      highScore = score;
+    }
     spawnFood();
   } else {
     snake.pop();
@@ -316,13 +320,34 @@ function draw() {
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 36px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('游戏结束', canvas.width / 2, canvas.height / 2 - 36);
+    ctx.fillText('游戏结束', canvas.width / 2, canvas.height / 2 - 46);
     ctx.font = '22px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
     ctx.fillStyle = '#ddd';
-    ctx.fillText(`得分: ${score}`, canvas.width / 2, canvas.height / 2 + 14);
-    ctx.font = '15px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
-    ctx.fillStyle = '#aaa';
-    ctx.fillText('按 R / 点「重来」重新开始', canvas.width / 2, canvas.height / 2 + 48);
+    ctx.fillText(`得分: ${score}`, canvas.width / 2, canvas.height / 2 + 4);
+
+    // 重新开始按钮
+    const btnW = 160, btnH = 44;
+    const btnX = canvas.width / 2 - btnW / 2;
+    const btnY = canvas.height / 2 + 24;
+    window._restartBtn = { x: btnX, y: btnY, w: btnW, h: btnH };
+
+    ctx.fillStyle = '#64dc64';
+    ctx.beginPath();
+    const br = 22;
+    ctx.moveTo(btnX + br, btnY);
+    ctx.lineTo(btnX + btnW - br, btnY);
+    ctx.quadraticCurveTo(btnX + btnW, btnY, btnX + btnW, btnY + br);
+    ctx.lineTo(btnX + btnW, btnY + btnH - br);
+    ctx.quadraticCurveTo(btnX + btnW, btnY + btnH, btnX + btnW - br, btnY + btnH);
+    ctx.lineTo(btnX + br, btnY + btnH);
+    ctx.quadraticCurveTo(btnX, btnY + btnH, btnX, btnY + btnH - br);
+    ctx.lineTo(btnX, btnY + br);
+    ctx.quadraticCurveTo(btnX, btnY, btnX + br, btnY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#111';
+    ctx.font = 'bold 18px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+    ctx.fillText('重新开始', canvas.width / 2, btnY + btnH / 2 + 6);
     ctx.textAlign = 'start';
   }
 
@@ -391,9 +416,38 @@ updateUI = function() {
   boostBadge.classList.toggle('active', speedBoost);
 };
 
+// ==================== 画布点击（重新开始按钮） ====================
+canvas.addEventListener('click', e => {
+  if (!gameOver) return;
+  const rect = canvas.getBoundingClientRect();
+  const sx = canvas.width / rect.width;
+  const sy = canvas.height / rect.height;
+  const cx = (e.clientX - rect.left) * sx;
+  const cy = (e.clientY - rect.top) * sy;
+  const btn = window._restartBtn;
+  if (btn && cx >= btn.x && cx <= btn.x + btn.w && cy >= btn.y && cy <= btn.y + btn.h) {
+    reset();
+  }
+});
+
+canvas.addEventListener('touchend', e => {
+  if (!gameOver) return;
+  const rect = canvas.getBoundingClientRect();
+  const sx = canvas.width / rect.width;
+  const sy = canvas.height / rect.height;
+  const t = e.changedTouches[0];
+  const cx = (t.clientX - rect.left) * sx;
+  const cy = (t.clientY - rect.top) * sy;
+  const btn = window._restartBtn;
+  if (btn && cx >= btn.x && cx <= btn.x + btn.w && cy >= btn.y && cy <= btn.y + btn.h) {
+    reset();
+  }
+}, { passive: true });
+
 // ==================== 触屏滑动 ====================
 canvas.addEventListener('touchstart', e => {
   e.preventDefault();
+  if (gameOver) return;
   const t = e.touches[0];
   touchStartX = t.clientX;
   touchStartY = t.clientY;
@@ -401,6 +455,7 @@ canvas.addEventListener('touchstart', e => {
 
 canvas.addEventListener('touchend', e => {
   e.preventDefault();
+  if (gameOver) return;
   if (touchStartX == null) return;
   const t = e.changedTouches[0];
   const dx = t.clientX - touchStartX;
