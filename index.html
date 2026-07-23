@@ -334,25 +334,23 @@ function sfxDeath() {
 
 // ==================== BGM 静音控制 ====================
 let bgmMuted = false;
+let currentBGM = null; // 'home' | 'game' | null
 function toggleMute() {
   bgmMuted = !bgmMuted;
-  const muteBtn = document.getElementById('muteBtn');
-  muteBtn.textContent = bgmMuted ? '🔇' : '🔊';
+  document.getElementById('muteBtn').textContent = bgmMuted ? '🔇' : '🔊';
   if (bgmMuted) {
     stopHomeBGM();
     stopGameBGM();
   } else {
-    // 根据当前所在场景恢复 BGM
-    if (!homeOverlay.classList.contains('hidden')) startHomeBGM();
-    else if (!skinOverlay.classList.contains('hidden') || gameOver || (!gameOver && !paused)) {
-      // 游戏中
-    }
+    if (currentBGM === 'home') startHomeBGM();
+    else if (currentBGM === 'game') startGameBGM();
   }
 }
 
 // ==================== 首页 BGM（轻松欢快） ====================
 let homeBGM = null;
 function startHomeBGM() {
+  currentBGM = 'home';
   if (bgmMuted) return;
   try {
     const ctx = ensureAudio();
@@ -401,11 +399,13 @@ function startHomeBGM() {
 }
 function stopHomeBGM() {
   if (homeBGM) { homeBGM.stopped = true; clearTimeout(homeBGM.timer); try { homeBGM.masterGain.disconnect(); } catch(e){} homeBGM = null; }
+  if (currentBGM === 'home') currentBGM = null;
 }
 
 // ==================== 游戏 BGM（鼓点强节奏感） ====================
 let gameBGM = null;
 function startGameBGM() {
+  currentBGM = 'game';
   if (bgmMuted) return;
   try {
     const ctx = ensureAudio();
@@ -482,6 +482,7 @@ function startGameBGM() {
 }
 function stopGameBGM() {
   if (gameBGM) { gameBGM.stopped = true; clearTimeout(gameBGM.timer); try { gameBGM.masterGain.disconnect(); } catch(e){} gameBGM = null; }
+  if (currentBGM === 'game') currentBGM = null;
 }
 
 // ==================== 皮肤数据 ====================
