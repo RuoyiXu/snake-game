@@ -807,7 +807,10 @@ updateUI = function() { origUpdateUI(); boostBadge.classList.toggle('active', sp
 const confirmOverlay = document.getElementById('confirmOverlay');
 let wasPausedByConfirm = false;
 function showConfirmRestart() {
-  if (!gameOver && !paused) { paused = true; wasPausedByConfirm = true; }
+  // 已死亡：直接退出，不弹确认框
+  if (gameOver) { confirmRestart(); return; }
+  // 局内重来：先暂停再弹确认框
+  if (!paused) { paused = true; wasPausedByConfirm = true; }
   confirmOverlay.classList.remove('hidden');
 }
 function hideConfirmRestart() {
