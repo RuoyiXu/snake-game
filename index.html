@@ -334,29 +334,22 @@ function sfxDeath() {
 
 // ==================== BGM 静音控制 ====================
 let bgmMuted = false;
-let currentBGM = null; // 'home' | 'game' | null
 function toggleMute() {
   bgmMuted = !bgmMuted;
   document.getElementById('muteBtn').textContent = bgmMuted ? '🔇' : '🔊';
-  if (bgmMuted) {
-    stopHomeBGM();
-    stopGameBGM();
-  } else {
-    if (currentBGM === 'home') startHomeBGM();
-    else if (currentBGM === 'game') startGameBGM();
-  }
+  // 直接控制音量，不停止/重启 BGM
+  if (homeBGM && homeBGM.masterGain) homeBGM.masterGain.gain.value = bgmMuted ? 0 : 0.07;
+  if (gameBGM && gameBGM.masterGain) gameBGM.masterGain.gain.value = bgmMuted ? 0 : 0.12;
 }
 
 // ==================== 首页 BGM（轻松欢快） ====================
 let homeBGM = null;
 function startHomeBGM() {
   if (homeBGM) return; // 已在播放，不重新开始
-  currentBGM = 'home';
-  if (bgmMuted) return;
   try {
     const ctx = ensureAudio();
     const masterGain = ctx.createGain();
-    masterGain.gain.value = 0.07;
+    masterGain.gain.value = bgmMuted ? 0 : 0.07;
     masterGain.connect(ctx.destination);
 
     // 舒缓五声音阶旋律（C大调：C D E G A）
@@ -402,20 +395,17 @@ function startHomeBGM() {
 }
 function stopHomeBGM() {
   if (homeBGM) { homeBGM.stopped = true; clearTimeout(homeBGM.timer); try { homeBGM.masterGain.disconnect(); } catch(e){} homeBGM = null; }
-  if (currentBGM === 'home') currentBGM = null;
 }
 
 // ==================== 游戏 BGM（鼓点强节奏感） ====================
 let gameBGM = null;
 function startGameBGM() {
   if (gameBGM) return; // 已在播放，不重新开始
-  currentBGM = 'game';
-  if (bgmMuted) return;
   try {
     const ctx = ensureAudio();
     stopGameBGM();
     const masterGain = ctx.createGain();
-    masterGain.gain.value = 0.12;
+    masterGain.gain.value = bgmMuted ? 0 : 0.12;
     masterGain.connect(ctx.destination);
     const bpm = 130, beat = 60 / bpm; // 每拍秒数
 
@@ -486,7 +476,6 @@ function startGameBGM() {
 }
 function stopGameBGM() {
   if (gameBGM) { gameBGM.stopped = true; clearTimeout(gameBGM.timer); try { gameBGM.masterGain.disconnect(); } catch(e){} gameBGM = null; }
-  if (currentBGM === 'game') currentBGM = null;
 }
 
 // ==================== 皮肤数据 ====================
