@@ -165,6 +165,7 @@ canvas{border:2px solid #333;border-radius:6px;display:block;background:#16162a}
       <button class="diff-btn easy" id="diffEasy"><span class="icon" style="color:#66bb6a;">●</span><span class="info"><h3 id="diffEasyName">简单模式</h3><p id="diffEasyDesc">悠闲节奏，轻松玩耍</p></span></button>
       <button class="diff-btn medium" id="diffMedium"><span class="icon" style="color:#ffa726;">●</span><span class="info"><h3 id="diffMedName">中等模式</h3><p id="diffMedDesc">正常速度，经典体验</p></span><span class="lock-badge" id="lockMedium" style="display:none;"><span class="chain"><span class="chain-line cl1"></span><span class="chain-line cl2"></span></span></span></button>
       <button class="diff-btn hard" id="diffHard"><span class="icon" style="color:#ef5350;">●</span><span class="info"><h3 id="diffHardName">困难模式</h3><p id="diffHardDesc">场地中出现障碍物，碰到即死</p></span><span class="lock-badge" id="lockHard" style="display:none;"><span class="chain"><span class="chain-line cl1"></span><span class="chain-line cl2"></span></span></span></button>
+      <button class="diff-btn boss" id="diffBoss" style="border-color:#d500f9;background:#fce4ff;"><span class="icon" style="color:#d500f9;">◆</span><span class="info"><h3 id="diffBossName">Boss 模式</h3><p id="diffBossDesc">巨型 Boss 追踪玩家，碰到即死</p></span><span class="lock-badge" id="lockBoss" style="display:none;"><span class="chain"><span class="chain-line cl1"></span><span class="chain-line cl2"></span></span></span></button>
     </div>
     <button class="diff-back" id="diffBack" style="display:block;margin:0 auto;">← 返回首页</button>
     <button id="devBtn" style="background:none;border:none;color:#ccc;font-size:12px;cursor:pointer;margin-top:4px;">开发者模式</button>
@@ -201,11 +202,13 @@ const L = {
     easy:'简单模式',easyD:'悠闲节奏，轻松玩耍',
     medium:'中等模式',mediumD:'正常速度，经典体验',
     hard:'困难模式',hardD:'场地中出现障碍物，碰到即死',
+    boss:'Boss模式',bossD:'巨型Boss追踪玩家，碰到即死',
     diffBack:'← 返回首页',devMode:'开发者模式',
     skinTitle:'选择皮肤',skinRules:'选择你喜欢的颜色，也可以在商店购买更多',
     skinStart:'开始游戏',secAuto:'秒后自动开始',
     shop:'皮肤商店',shopClose:'关闭商店',lockE:'在简单模式中吃到 10 个豆即可解锁',
     lockM:'在中等模式中吃到 10 个豆即可解锁',
+    lockH:'在困难模式中吃到 10 个豆即可解锁',
     confirmT:'重来',confirmM:'重来会退出本局游戏<br>清空当前进度',
     confirmBack:'返回游戏',confirmOk:'确认退出',
     footerHint:'方向键/WASD 移动',btnBoost:'加速',btnPause:'暂停',btnRestart:'重来',btnShop:'商店',
@@ -220,7 +223,7 @@ const L = {
     achShrink:'瘦身专家 - 累计使用缩小 3 次',
     pwShield:'护盾',pwMagnet:'磁铁',pwShrink:'缩小',
     pwShieldD:'免疫碰撞',pwMagnetD:'自动吸豆',pwShrinkD:'缩短蛇身',
-    unlockedMed:'中等模式已解锁！',unlockedHard:'困难模式已解锁！',
+    unlockedMed:'中等模式已解锁！',unlockedHard:'困难模式已解锁！',unlockedBoss:'Boss模式已解锁！',
     replayEnd:'回放结束',noReplay:'暂无回放数据',
   },
   en:{score:'Score',best:'Best',coins:'Coins',boost:'BOOST',music:'Music',muted:'Muted',
@@ -231,11 +234,13 @@ const L = {
     easy:'Easy',easyD:'Relaxed pace, casual play',
     medium:'Medium',mediumD:'Normal speed, classic experience',
     hard:'Hard',hardD:'Obstacles appear, touch = death',
+    boss:'Boss',bossD:'Giant boss hunts you, touch = death',
     diffBack:'← Back to Home',devMode:'Dev Mode',
     skinTitle:'Select Skin',skinRules:'Choose your color, buy more in the shop',
     skinStart:'Start Game',secAuto:'seconds to start',
     shop:'Skin Shop',shopClose:'Close Shop',lockE:'Eat 10 beans in Easy mode to unlock',
     lockM:'Eat 10 beans in Medium mode to unlock',
+    lockH:'Eat 10 beans in Hard mode to unlock',
     confirmT:'Restart',confirmM:'This will quit the game<br>and clear current progress',
     confirmBack:'Continue',confirmOk:'Quit',
     footerHint:'Arrows/WASD move',btnBoost:'Boost',btnPause:'Pause',btnRestart:'Restart',btnShop:'Shop',
@@ -250,7 +255,7 @@ const L = {
     achShrink:'Slim Expert - Use shrink 3 times',
     pwShield:'Shield',pwMagnet:'Magnet',pwShrink:'Shrink',
     pwShieldD:'No collision',pwMagnetD:'Auto-attract food',pwShrinkD:'Shorter snake',
-    unlockedMed:'Medium mode unlocked!',unlockedHard:'Hard mode unlocked!',
+    unlockedMed:'Medium mode unlocked!',unlockedHard:'Hard mode unlocked!',unlockedBoss:'Boss mode unlocked!',
     replayEnd:'Replay ended',noReplay:'No replay data',
   }
 };
@@ -274,6 +279,8 @@ function updateAllTexts(){
   document.getElementById('diffMedDesc').textContent=t('mediumD');
   document.getElementById('diffHardName').textContent=t('hard');
   document.getElementById('diffHardDesc').textContent=t('hardD');
+  document.getElementById('diffBossName').textContent=t('boss');
+  document.getElementById('diffBossDesc').textContent=t('bossD');
   document.getElementById('diffBack').textContent=t('diffBack');
   document.getElementById('skinTitle').textContent=t('skinTitle');
   document.getElementById('skinRules').textContent=t('skinRules');
@@ -328,9 +335,9 @@ const POWERUP_TYPES = [
 // ==================== 解锁 ====================
 let devMode = false;
 function getMaxBeans(mode){return(saveData.unlocks&&saveData.unlocks[mode])||0}
-function isDiffUnlocked(mode){if(devMode)return true;if(mode==='easy')return true;if(mode==='medium')return getMaxBeans('easy')>=10;if(mode==='hard')return getMaxBeans('medium')>=10;return false}
-function getUnlockHint(mode){return mode==='medium'?t('lockE'):(mode==='hard'?t('lockM'):'')}
-function recordBeans(mode,beans){if(!saveData.unlocks)saveData.unlocks={};const prev=getMaxBeans(mode);if(beans>saveData.unlocks[mode]){saveData.unlocks[mode]=beans;if(mode==='easy'&&prev<10&&beans>=10)showToast(t('unlockedMed'));if(mode==='medium'&&prev<10&&beans>=10)showToast(t('unlockedHard'));persistSave()}}
+function isDiffUnlocked(mode){if(devMode)return true;if(mode==='easy')return true;if(mode==='medium')return getMaxBeans('easy')>=10;if(mode==='hard')return getMaxBeans('medium')>=10;if(mode==='boss')return getMaxBeans('hard')>=10;return false}
+function getUnlockHint(mode){return mode==='medium'?t('lockE'):(mode==='hard'?t('lockM'):(mode==='boss'?t('lockH'):''))}
+function recordBeans(mode,beans){if(!saveData.unlocks)saveData.unlocks={};const prev=getMaxBeans(mode);if(beans>saveData.unlocks[mode]){saveData.unlocks[mode]=beans;if(mode==='easy'&&prev<10&&beans>=10)showToast(t('unlockedMed'));if(mode==='medium'&&prev<10&&beans>=10)showToast(t('unlockedHard'));if(mode==='hard'&&prev<10&&beans>=10)showToast(t('unlockedBoss'));persistSave()}}
 
 // ==================== Canvas ====================
 const isMobile=window.matchMedia('(pointer:coarse)').matches;
@@ -351,6 +358,8 @@ let gameLoop,touchStartX,touchStartY,difficulty='medium',obstacles=[],obstacleTi
 let powerups=[],activePowerups={};
 let replayFrames=[],isReplaying=false,replayIndex=0;
 let aiMode=false,aiSnake=null,aiScore=0,aiDir=[1,0],aiAlive=true;
+// Boss 模式
+let boss=null; // {x,y,w,h,targetX,targetY,moveTimer,speed}
 // 体力系统
 const MAX_STAMINA = 100;
 let stamina = MAX_STAMINA;       // 玩家体力
@@ -367,6 +376,9 @@ function reset(){
   obstacles=[];obstacleTimer=0;powerups=[];activePowerups={};gameBeans=0;
   replayFrames=[];replayIndex=0;isReplaying=false;
   stamina=MAX_STAMINA;aiStamina=MAX_STAMINA;aiBoosting=false;
+  // Boss 初始化
+  if(difficulty==='boss'){boss={x:14,y:14,w:3,h:3,moveTimer:0,speed:20}}
+  else{boss=null}
   if(aiMode&&!isReplaying){
     aiSnake=[[sx+2,sy]];aiScore=0;aiDir=[1,0];aiAlive=true;
   }else{aiSnake=null;aiScore=0;aiAlive=false}
@@ -374,7 +386,7 @@ function reset(){
   boostBadge.classList.remove('active');powerupBar.innerHTML='';
   gameOverBtn.style.display='none';
 }
-function getFPS(){if(difficulty==='easy')return 8;if(difficulty==='hard')return 12;return 10}
+function getFPS(){if(difficulty==='easy')return 8;if(difficulty==='hard')return 12;if(difficulty==='boss')return 10;return 10}
 
 function spawnFood(){
   const occupied=new Set(snake.map(([x,y])=>`${x},${y}`));
@@ -444,6 +456,29 @@ function updateAIPanel(){
   const p=document.getElementById('aiPanel');
   if(aiMode&&!isReplaying){p.classList.remove('hidden');p.textContent=`${t('aiScore')} ${aiScore}`}
   else p.classList.add('hidden');
+}
+
+// ==================== Boss 更新 ====================
+function updateBoss(){
+  if(!boss||difficulty!=='boss')return;
+  boss.moveTimer++;
+  // 分数越高 Boss 越快
+  const speed=Math.max(5,20-Math.floor(score/50)*3);
+  if(boss.moveTimer<speed)return;
+  boss.moveTimer=0;
+  // 向蛇头方向移动一格
+  const head=snake[0];
+  const bx=boss.x+Math.floor(boss.w/2),by=boss.y+Math.floor(boss.h/2);
+  let dx=0,dy=0;
+  if(head[0]>bx)dx=1;else if(head[0]<bx)dx=-1;
+  if(head[1]>by)dy=1;else if(head[1]<by)dy=-1;
+  // 随机选择一个方向移动（优先向蛇靠近）
+  if(Math.random()<.6){if(dx!==0){boss.x=Math.max(0,Math.min(COLS-boss.w,boss.x+dx))}}
+  else{if(dy!==0){boss.y=Math.max(0,Math.min(ROWS-boss.h,boss.y+dy))}}
+}
+function checkBossCollision(nx,ny){
+  if(!boss||difficulty!=='boss')return false;
+  return nx>=boss.x&&nx<boss.x+boss.w&&ny>=boss.y&&ny<boss.y+boss.h;
 }
 
 // ==================== 体力系统 ====================
@@ -542,6 +577,9 @@ function update(){
   // 碰撞
   if(snake.some(([x,y])=>x===nx&&y===ny)){endGame();return}
   if(!activePowerups.shield||activePowerups.shield<=0){
+    // Boss 碰撞
+    if(checkBossCollision(nx,ny)){endGame();return}
+    // 障碍物碰撞
     for(const obs of obstacles){if(obs.state!=='solid')continue;if(obs.cells.some(c=>c.x===nx&&c.y===ny)){endGame();return}}
   }
   snake.unshift([nx,ny]);
@@ -564,6 +602,8 @@ function update(){
 
   // 碰撞检测蛇身
   if(!activePowerups.shield||activePowerups.shield<=0){
+    // Boss 身碰
+    if(boss&&snake.some(([sx,sy])=>sx>=boss.x&&sx<boss.x+boss.w&&sy>=boss.y&&sy<boss.y+boss.h)){endGame();return}
     for(const obs of obstacles){if(obs.state!=='solid')continue;if(snake.some(([sx,sy])=>obs.cells.some(c=>c.x===sx&&c.y===sy))){endGame();return}}
   }
   updateUI();if(gameOver)return;
@@ -604,8 +644,9 @@ function update(){
       else if(o.state==='despawning'&&o.timer<=0)return false;return true});
   }
 
-  // AI
+  // AI + Boss
   updateAI();
+  updateBoss();
 }
 
 function endGame(){
@@ -661,6 +702,26 @@ function draw(){
       else if(isDs){ctx.strokeStyle=`rgba(200,100,80,${.2+.2*Math.sin(frame*.3)})`;ctx.lineWidth=2;ctx.setLineDash([3,5]);ctx.strokeRect(ox-.5,oy-.5,os+1,os+1);ctx.setLineDash([])}
     });
   });
+
+  // Boss
+  if(boss&&difficulty==='boss'){
+    const bx=boss.x*CELL,by=boss.y*CELL,bw=boss.w*CELL,bh=boss.h*CELL;
+    // 主体
+    ctx.fillStyle='rgba(180,20,40,.7)';ctx.fillRect(bx+2,by+2,bw-4,bh-4);
+    // 脉冲边框
+    const glow=.5+.5*Math.sin(frame*.15);
+    ctx.strokeStyle=`rgba(255,40,60,${glow})`;ctx.lineWidth=4;
+    ctx.strokeRect(bx+2,by+2,bw-4,bh-4);
+    ctx.strokeStyle=`rgba(255,100,40,${glow*.6})`;ctx.lineWidth=8;
+    ctx.strokeRect(bx-2,by-2,bw,bh);
+    // 骷髅标记
+    ctx.fillStyle='#fff';ctx.font=`bold ${CELL}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('☠',bx+bw/2,by+bh/2);ctx.textAlign='start';
+    // Boss 名称标签
+    const speed=Math.max(5,20-Math.floor(score/50)*3);
+    ctx.fillStyle='#ff4060';ctx.font='bold 11px sans-serif';
+    ctx.fillText(`BOSS Lv.${Math.floor(score/50)+1}`,bx+4,by-6);
+  }
 
   // 蛇
   const skin=SKINS.find(sk=>sk.id===saveData.equipped)||SKINS[0];
@@ -792,7 +853,7 @@ document.getElementById('btnPause').addEventListener('click',()=>{togglePause()}
 document.getElementById('btnRestart').addEventListener('click',()=>{sfxClick();showConfirmRestart()});
 
 // ==================== Diff locks ====================
-function updateDiffLocks(){const ml=!isDiffUnlocked('medium'),hl=!isDiffUnlocked('hard');document.getElementById('lockMedium').style.display=ml?'block':'none';document.getElementById('lockHard').style.display=hl?'block':'none';document.getElementById('diffMedium').classList.toggle('locked',ml);document.getElementById('diffHard').classList.toggle('locked',hl)}
+function updateDiffLocks(){const ml=!isDiffUnlocked('medium'),hl=!isDiffUnlocked('hard'),bl=!isDiffUnlocked('boss');document.getElementById('lockMedium').style.display=ml?'block':'none';document.getElementById('lockHard').style.display=hl?'block':'none';document.getElementById('lockBoss').style.display=bl?'block':'none';document.getElementById('diffMedium').classList.toggle('locked',ml);document.getElementById('diffHard').classList.toggle('locked',hl);document.getElementById('diffBoss').classList.toggle('locked',bl)}
 function showLockTip(mode){document.getElementById('lockTipMsg').textContent=getUnlockHint(mode);document.getElementById('lockTip').style.display='block'}
 document.getElementById('lockTipClose').addEventListener('click',()=>{document.getElementById('lockTip').style.display='none'});
 
@@ -806,6 +867,7 @@ document.getElementById('devBtn').addEventListener('click',()=>{const pw=prompt(
 document.getElementById('diffEasy').addEventListener('click',()=>{sfxClick();selectDifficulty('easy')});
 document.getElementById('diffMedium').addEventListener('click',()=>{sfxClick();if(!isDiffUnlocked('medium')){showLockTip('medium');return}selectDifficulty('medium')});
 document.getElementById('diffHard').addEventListener('click',()=>{sfxClick();if(!isDiffUnlocked('hard')){showLockTip('hard');return}selectDifficulty('hard')});
+document.getElementById('diffBoss').addEventListener('click',()=>{sfxClick();if(!isDiffUnlocked('boss')){showLockTip('boss');return}selectDifficulty('boss')});
 function selectDifficulty(level){difficulty=level;diffOverlay.classList.add('hidden');document.getElementById('lockTip').style.display='none';skinOverlay.classList.remove('hidden');skinDismissed=false;skinTimer=5;document.getElementById('countdownNum').textContent=skinTimer;renderSplashSkinGrid();clearInterval(skinInterval);skinInterval=setInterval(()=>{skinTimer--;if(skinTimer<=0){clearInterval(skinInterval);document.getElementById('countdownNum').textContent='0';enterGame()}else{document.getElementById('countdownNum').textContent=skinTimer}},1000)}
 
 // Skin → Game
