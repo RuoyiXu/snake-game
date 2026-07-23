@@ -473,16 +473,37 @@ canvas.addEventListener('touchend', e => {
   touchStartY = null;
 }, { passive: false });
 
-// 虚拟方向键
+// 移动端长按加速
+let longPressTimer = null;
+const LONG_PRESS_DELAY = 150; // 按住 150ms 后触发加速
+
 function bindDpad(id, dir) {
   const btn = document.getElementById(id);
   btn.addEventListener('pointerdown', e => {
     e.preventDefault();
+    // 改变方向
     if (dir[0] === 1  && direction[0] !== -1) nextDirection = [1, 0];
     if (dir[0] === -1 && direction[0] !== 1)  nextDirection = [-1, 0];
     if (dir[1] === 1  && direction[1] !== -1) nextDirection = [0, 1];
     if (dir[1] === -1 && direction[1] !== 1)  nextDirection = [0, -1];
+
+    if (gameOver) return;
+    // 长按后加速
+    clearTimeout(longPressTimer);
+    longPressTimer = setTimeout(() => {
+      speedBoost = true;
+      boostBadge.classList.add('active');
+    }, LONG_PRESS_DELAY);
   });
+
+  const stopBoost = () => {
+    clearTimeout(longPressTimer);
+    speedBoost = false;
+    boostBadge.classList.remove('active');
+  };
+  btn.addEventListener('pointerup', stopBoost);
+  btn.addEventListener('pointerleave', stopBoost);
+  btn.addEventListener('pointercancel', stopBoost);
 }
 bindDpad('btnUp',    [0, -1]);
 bindDpad('btnDown',  [0, 1]);
