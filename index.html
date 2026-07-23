@@ -21,7 +21,7 @@
     -webkit-touch-callout: none;
     -webkit-user-select: none; user-select: none;
   }
-  .game-wrapper { display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative; }
+  .game-wrapper { display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative; min-height: 100vh; min-height: 100dvh; justify-content: center; }
   .header { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 420px; color: #ccc; padding: 0 4px; }
   .scores { display: flex; flex-direction: column; gap: 2px; }
   .score { font-size: 20px; font-weight: bold; color: #eee; }
@@ -350,6 +350,7 @@ function reset() {
   updateUI();
   updateCoinDisplay();
   boostBadge.classList.remove('active');
+  gameOverBtn.style.display = 'none';
 }
 
 function getFPS() {
@@ -585,31 +586,38 @@ function confirmRestart() {
   obstacles = []; obstacleTimer = 0;
   diffOverlay.classList.remove('hidden');
 }
-
 document.getElementById('confirmCancel').addEventListener('click', hideConfirmRestart);
 document.getElementById('confirmOk').addEventListener('click', confirmRestart);
 
-// ==================== 画布点击重新开始 ====================
-function handleCanvasRestart(cx, cy) {
-  if (!gameOver) return false;
-  const btn = window._restartBtn;
-  if (btn && cx >= btn.x && cx <= btn.x + btn.w && cy >= btn.y && cy <= btn.y + btn.h) {
-    return true;
-  }
-  return false;
+// 在游戏结束遮罩上覆盖一个 DOM 按钮（比 canvas 点击更可靠）
+const gameOverBtn = document.createElement('button');
+gameOverBtn.id = 'gameOverBtn';
+gameOverBtn.textContent = '退出重来';
+gameOverBtn.style.cssText = `
+  position:absolute; z-index:50; display:none;
+  background:#64dc64; color:#111; border:none; border-radius:22px;
+  font-size:18px; font-weight:bold; padding:11px 0; cursor:pointer;
+  font-family:inherit; letter-spacing:1px;
+`;
+gameOverBtn.addEventListener('click', showConfirmRestart);
+document.querySelector('.game-wrapper').appendChild(gameOverBtn);
+
+function syncGameOverBtn() {
+  if (!gameOver) { gameOverBtn.style.display = 'none'; return; }
+  const rect = canvas.getBoundingClientRect();
+  const wrapRect = canvas.parentElement.getBoundingClientRect();
+  const btnW = 160, btnH = 44;
+  // 按钮在 canvas 内居中偏下
+  gameOverBtn.style.display = 'block';
+  gameOverBtn.style.left = (rect.left - wrapRect.left + canvas.width / 2 - btnW / 2) + 'px';
+  gameOverBtn.style.top = (rect.top - wrapRect.top + canvas.height / 2 + 34) + 'px';
+  gameOverBtn.style.width = btnW + 'px';
+  gameOverBtn.style.height = btnH + 'px';
 }
-canvas.addEventListener('click', e => {
-  const rect = canvas.getBoundingClientRect();
-  const sx = canvas.width / rect.width, sy = canvas.height / rect.height;
-  if (handleCanvasRestart((e.clientX - rect.left) * sx, (e.clientY - rect.top) * sy)) { showConfirmRestart(); }
-});
-canvas.addEventListener('touchend', e => {
-  if (!gameOver) return;
-  const rect = canvas.getBoundingClientRect();
-  const sx = canvas.width / rect.width, sy = canvas.height / rect.height;
-  const t = e.changedTouches[0];
-  if (handleCanvasRestart((t.clientX - rect.left) * sx, (t.clientY - rect.top) * sy)) { showConfirmRestart(); }
-}, { passive: true });
+
+// 重写 draw 在 gameover 后也调用 syncGameOverBtn
+const origDraw = draw;
+draw = function() { origDraw(); if (gameOver) syncGameOverBtn(); };
 
 // ==================== 触屏滑动 ====================
 canvas.addEventListener('touchstart', e => {
