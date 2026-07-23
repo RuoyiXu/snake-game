@@ -109,6 +109,7 @@
     cursor: pointer; font-family: inherit; text-align: left;
     transition: all .15s;
     display: flex; align-items: center; gap: 12px;
+    position: relative;
   }
   .diff-btn:active { transform: scale(0.97); }
   .diff-btn.easy { border-color: #66bb6a; background: #e8f5e9; }
@@ -117,7 +118,9 @@
   .diff-btn.medium:active { border-color: #ef6c00; background: #ffe0b2; }
   .diff-btn.hard { border-color: #ef5350; background: #ffebee; }
   .diff-btn.hard:active { border-color: #d32f2f; background: #ffcdd2; }
+  .diff-btn.locked { opacity: 0.55; }
   .diff-btn .icon { font-size: 36px; flex-shrink: 0; }
+  .lock-badge { position: absolute; top: 4px; right: 8px; font-size: 14px; }
   .diff-btn .info h3 { font-size: 17px; color: #444; margin-bottom: 2px; }
   .diff-btn .info p { font-size: 12px; color: #888; }
   .diff-back { background: none; border: none; color: #999; font-size: 14px; cursor: pointer; font-family: inherit; margin-top: 4px; }
@@ -229,7 +232,7 @@
 
 <!-- 难度选择弹窗 -->
 <div class="diff-overlay hidden" id="diffOverlay">
-  <div class="diff-card">
+  <div class="diff-card" style="position:relative;">
     <h2>选择难度</h2>
     <p class="sub">选择适合你的挑战级别</p>
     <div class="diff-btns">
@@ -240,13 +243,20 @@
       <button class="diff-btn medium" id="diffMedium">
         <span class="icon" style="color:#ffa726;">●</span>
         <span class="info"><h3>中等模式</h3><p>正常速度，经典体验</p></span>
+        <span class="lock-badge" id="lockMedium" style="display:none;">锁</span>
       </button>
       <button class="diff-btn hard" id="diffHard">
         <span class="icon" style="color:#ef5350;">●</span>
         <span class="info"><h3>困难模式</h3><p>场地中出现障碍物，碰到即死</p></span>
+        <span class="lock-badge" id="lockHard" style="display:none;">锁</span>
       </button>
     </div>
     <button class="diff-back" id="diffBack">← 返回首页</button>
+    <!-- 解锁提示浮层 -->
+    <div id="lockTip" style="display:none; position:absolute; bottom:70px; left:50%; transform:translateX(-50%); background:#fff; border-radius:12px; padding:12px 32px 12px 16px; box-shadow:0 4px 20px rgba(0,0,0,0.18); font-size:13px; color:#666; white-space:nowrap; z-index:5;">
+      <span id="lockTipMsg"></span>
+      <button id="lockTipClose" style="position:absolute; top:6px; right:8px; background:none; border:none; font-size:14px; color:#aaa; cursor:pointer;">✕</button>
+    </div>
   </div>
 </div>
 
@@ -350,6 +360,29 @@ function sfxDeath() {
     o.connect(g); g.connect(ctx.destination);
     o.start(t); o.stop(t + 0.5);
   } catch(e) {}
+}
+
+// ==================== 关卡解锁 ====================
+function getMaxBeans(mode) {
+  return (saveData.unlocks && saveData.unlocks[mode]) || 0;
+}
+function isDiffUnlocked(mode) {
+  if (mode === 'easy') return true;
+  if (mode === 'medium') return getMaxBeans('easy') >= 10;
+  if (mode === 'hard') return getMaxBeans('medium') >= 10;
+  return false;
+}
+function getUnlockHint(mode) {
+  if (mode === 'medium') return '在简单模式中吃到 10 个豆即可解锁';
+  if (mode === 'hard') return '在中等模式中吃到 10 个豆即可解锁';
+  return '';
+}
+function recordBeans(mode, beans) {
+  if (!saveData.unlocks) saveData.unlocks = {};
+  if (!saveData.unlocks[mode] || beans > saveData.unlocks[mode]) {
+    saveData.unlocks[mode] = beans;
+    persistSave();
+  }
 }
 
 // ==================== BGM 静音控制 ====================
@@ -647,6 +680,9 @@ function endGame() {
     saveData.coins = (saveData.coins || 0) + earned;
     persistSave();
   }
+  // 记录解锁进度
+  const beans = Math.floor(score / 10);
+  recordBeans(difficulty, beans);
   updateCoinDisplay();
   updateUI();
 }
@@ -825,6 +861,8 @@ function confirmRestart() {
   obstacles = []; obstacleTimer = 0;
   stopGameBGM();
   startHomeBGM();
+  updateDiffLocks();
+  document.getElementById('lockTip').style.display = 'none';
   diffOverlay.classList.remove('hidden');
 }
 document.getElementById('confirmCancel').addEventListener('click', () => { sfxClick(); hideConfirmRestart(); });
@@ -1144,19 +1182,40 @@ const diffOverlay = document.getElementById('diffOverlay');
 const skinOverlay = document.getElementById('skinOverlay');
 let skinTimer = 5, skinInterval, skinDismissed = false;
 
+// 更新难度按钮的锁定状态
+function updateDiffLocks() {
+  const mediumLocked = !isDiffUnlocked('medium');
+  const hardLocked = !isDiffUnlocked('hard');
+  document.getElementById('lockMedium').style.display = mediumLocked ? 'block' : 'none';
+  document.getElementById('lockHard').style.display = hardLocked ? 'block' : 'none';
+  document.getElementById('diffMedium').classList.toggle('locked', mediumLocked);
+  document.getElementById('diffHard').classList.toggle('locked', hardLocked);
+}
+
+// 提示浮层
+function showLockTip(mode) {
+  document.getElementById('lockTipMsg').textContent = getUnlockHint(mode);
+  document.getElementById('lockTip').style.display = 'block';
+}
+document.getElementById('lockTipClose').addEventListener('click', () => {
+  document.getElementById('lockTip').style.display = 'none';
+});
+
 // 首页「进入游戏」→ 难度选择
 document.getElementById('homeEnterBtn').addEventListener('click', () => {
   sfxClick();
   homeOverlay.classList.add('hidden');
   stopHomeBg();
+  updateDiffLocks();
+  document.getElementById('lockTip').style.display = 'none';
   diffOverlay.classList.remove('hidden');
-  // 保留首页 BGM 继续播放
 });
 
 // 难度选择 → 返回首页
 document.getElementById('diffBack').addEventListener('click', () => {
   sfxClick();
   diffOverlay.classList.add('hidden');
+  document.getElementById('lockTip').style.display = 'none';
   homeOverlay.classList.remove('hidden');
   startHomeBg();
 });
@@ -1165,6 +1224,7 @@ document.getElementById('diffBack').addEventListener('click', () => {
 function selectDifficulty(level) {
   difficulty = level;
   diffOverlay.classList.add('hidden');
+  document.getElementById('lockTip').style.display = 'none';
   skinOverlay.classList.remove('hidden');
   skinDismissed = false;
   skinTimer = 5;
@@ -1178,8 +1238,16 @@ function selectDifficulty(level) {
 }
 
 document.getElementById('diffEasy').addEventListener('click', () => { sfxClick(); selectDifficulty('easy'); });
-document.getElementById('diffMedium').addEventListener('click', () => { sfxClick(); selectDifficulty('medium'); });
-document.getElementById('diffHard').addEventListener('click', () => { sfxClick(); selectDifficulty('hard'); });
+document.getElementById('diffMedium').addEventListener('click', () => {
+  sfxClick();
+  if (!isDiffUnlocked('medium')) { showLockTip('medium'); return; }
+  selectDifficulty('medium');
+});
+document.getElementById('diffHard').addEventListener('click', () => {
+  sfxClick();
+  if (!isDiffUnlocked('hard')) { showLockTip('hard'); return; }
+  selectDifficulty('hard');
+});
 
 function enterGame() {
   if (skinDismissed) return;
