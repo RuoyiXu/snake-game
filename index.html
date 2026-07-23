@@ -433,9 +433,8 @@ function updateAI(){
   // AI 离食物远且有体力时冲刺
   const distToFood=path?path.length:999;
   aiBoosting=(distToFood>6&&aiStamina>20);
-  const aiFPS=getFPS();const aiTickRate=aiBoosting?aiFPS*BOOST_MULTI:aiFPS;
-  // 用更慢的速率模拟 AI 反应时间
-  if(aiTickRate<30&&Math.random()<.3)return; // 偶尔"发呆"一帧
+  // AI 隔帧移动，模拟反应延迟
+  if(aiBoosting){if(Math.random()<.2)return}else{if(Math.random()<.4)return}
   if(path&&path.length>=1){
     const [tx,ty]=path[0];
     let dx=tx-head[0],dy=ty-head[1];
