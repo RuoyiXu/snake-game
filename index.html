@@ -51,30 +51,41 @@
   .home-overlay {
     position: fixed; inset: 0; z-index: 100;
     display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
-    background: linear-gradient(180deg, #ffe8d6 0%, #fde2c8 15%, #f8d8c0 30%, #e8f0e0 55%, #d4e8d0 75%, #c5e0c0 100%);
     overflow: hidden;
+    background: #87ceeb;
   }
   .home-overlay.hidden { display: none; }
   .home-bg-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-  .home-content { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; padding-bottom: max(50px, 10vh); gap: 8px; }
-  .home-title { font-size: 48px; letter-spacing: 2px; animation: titleFloat 2.5s ease-in-out infinite; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.08)); }
-  .home-subtitle { font-size: 15px; color: #a09080; margin-bottom: 12px; text-align: center; line-height: 1.6; }
-  @keyframes titleFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+  .home-content { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; padding-bottom: max(60px, 14vh); gap: 6px; }
+  .home-title {
+    font-size: 56px; font-weight: 900; letter-spacing: 4px;
+    /* 每个字独立样式通过 span 实现 */
+    margin-bottom: 4px;
+    animation: titleFloat 3s ease-in-out infinite;
+  }
+  .home-title span {
+    display: inline-block;
+    filter: drop-shadow(3px 4px 0px rgba(0,0,0,0.25));
+  }
+  .home-title .c1 { color: #ff5722; animation: charBounce 0.45s ease-in-out infinite; }
+  .home-title .c2 { color: #f9a825; animation: charBounce 0.45s ease-in-out 0.1s infinite; }
+  .home-title .c3 { color: #4caf50; animation: charBounce 0.45s ease-in-out 0.2s infinite; }
+  @keyframes charBounce {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  @keyframes titleFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  .home-subtitle { font-size: 15px; color: #5d7a5d; margin-bottom: 14px; text-align: center; line-height: 1.5; font-weight: 500; }
   .home-enter-btn {
-    background: #ff7b7b; color: #fff; border: none; padding: 14px 52px; border-radius: 40px;
-    font-size: 20px; font-weight: bold; cursor: pointer; font-family: inherit;
-    box-shadow: 0 6px 24px rgba(255,123,123,0.35);
-    animation: btnBounce 2s ease-in-out infinite;
-    letter-spacing: 1px;
-    transition: transform .15s;
+    background: #ff6e6e; color: #fff; border: 3px solid #d94444; padding: 14px 50px; border-radius: 50px;
+    font-size: 21px; font-weight: bold; cursor: pointer; font-family: inherit;
+    box-shadow: 0 6px 0 #d94444, 0 8px 24px rgba(0,0,0,0.15);
+    animation: btnBounce 2.5s ease-in-out infinite;
+    letter-spacing: 2px;
+    transition: all .1s;
   }
-  .home-enter-btn:active { transform: scale(0.94); }
-  @keyframes btnBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
-  .home-decor {
-    position: absolute; z-index: 1; pointer-events: none;
-    font-size: 28px; animation: decorFloat 4s ease-in-out infinite; opacity: 0.7;
-  }
-  @keyframes decorFloat { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-14px) rotate(8deg); } }
+  .home-enter-btn:active { transform: translateY(3px); box-shadow: 0 3px 0 #d94444, 0 4px 12px rgba(0,0,0,0.15); }
+  @keyframes btnBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
 
   /* ====== 皮肤选择弹窗 ====== */
   .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; }
@@ -145,17 +156,12 @@
 <!-- 卡通治愈系首页 -->
 <div class="home-overlay" id="homeOverlay">
   <canvas class="home-bg-canvas" id="homeBgCanvas"></canvas>
-  <!-- 漂浮装饰 -->
-  <span class="home-decor" style="top:8%;left:12%;animation-delay:0s;">🍎</span>
-  <span class="home-decor" style="top:6%;right:14%;animation-delay:0.8s;">🌟</span>
-  <span class="home-decor" style="top:18%;left:22%;animation-delay:1.6s;">🫧</span>
-  <span class="home-decor" style="top:14%;right:24%;animation-delay:2.4s;">🍒</span>
-  <span class="home-decor" style="top:25%;left:8%;animation-delay:3.2s;">✨</span>
-  <span class="home-decor" style="top:22%;right:10%;animation-delay:1.2s;">🌸</span>
   <div class="home-content">
-    <div class="home-title">🐍 贪吃蛇</div>
-    <div class="home-subtitle">滑动指尖 · 吃掉美味 · 收集金币<br>和可爱的小蛇一起冒险吧 ✨</div>
-    <button class="home-enter-btn" id="homeEnterBtn">进入游戏</button>
+    <div class="home-title">
+      <span class="c1">贪</span><span class="c2">吃</span><span class="c3">蛇</span>
+    </div>
+    <div class="home-subtitle">☀️ 阳光明媚，春暖花开 ☀️<br>和小蛇一起快乐冒险吧～</div>
+    <button class="home-enter-btn" id="homeEnterBtn">🎮 进入游戏</button>
   </div>
 </div>
 
@@ -512,123 +518,197 @@ function renderSkinGrid(container, onSelect) {
   });
 }
 
-// ==================== 首页背景动画 ====================
+// ==================== 首页背景动画（喜羊羊风格） ====================
 const homeOverlay = document.getElementById('homeOverlay');
 const homeBgCanvas = document.getElementById('homeBgCanvas');
 const homeBgCtx = homeBgCanvas.getContext('2d');
-let homeBgSnakes = [];
-let homeBgFoods = [];
-let homeBgFrame = 0;
-let bgAnimId;
-
-const PASTEL_COLORS = [
-  { head: '#ff9999', body: '#ffcccc' },
-  { head: '#ffbb77', body: '#ffddbb' },
-  { head: '#99cc99', body: '#ccddcc' },
-  { head: '#88b8e8', body: '#bbccf0' },
-  { head: '#e8a0d0', body: '#f0cce0' },
-  { head: '#90d0c0', body: '#c0e8e0' },
-  { head: '#f5c880', body: '#fbddb0' },
-];
+let homeBgFrame = 0, bgAnimId;
+let clouds = [], flowers = [], bgSnakes = [];
 
 function initHomeBg() {
   homeBgCanvas.width = window.innerWidth;
   homeBgCanvas.height = window.innerHeight;
-  const cols = 30, rows = 40;
-  const cell = Math.max(18, Math.floor(Math.min(homeBgCanvas.width / cols, homeBgCanvas.height / rows)));
-  const gridW = Math.floor(homeBgCanvas.width / cell);
-  const gridH = Math.floor(homeBgCanvas.height / cell);
+  const W = homeBgCanvas.width, H = homeBgCanvas.height;
 
-  // 创建 5-7 条装饰蛇
-  homeBgSnakes = [];
-  const count = 5 + Math.floor(Math.random() * 3);
-  for (let i = 0; i < count; i++) {
-    const len = 4 + Math.floor(Math.random() * 8);
-    const sx = Math.floor(Math.random() * gridW);
-    const sy = Math.floor(Math.random() * gridH);
-    const segs = [];
-    for (let j = 0; j < len; j++) segs.push([sx - j, sy]);
-    homeBgSnakes.push({
-      segments: segs,
-      dir: [[1,0],[-1,0],[0,1],[0,-1]][Math.floor(Math.random()*4)],
-      color: PASTEL_COLORS[i % PASTEL_COLORS.length],
-      cell,
-      maxLen: len,
+  // 白云（画布坐标固定）
+  clouds = [
+    { x: W*0.08, y: H*0.08, s: 1.0, sp: 0.15 },
+    { x: W*0.30, y: H*0.14, s: 0.7, sp: 0.22 },
+    { x: W*0.58, y: H*0.06, s: 1.3, sp: 0.12 },
+    { x: W*0.78, y: H*0.18, s: 0.8, sp: 0.18 },
+  ];
+
+  // 小花（在草地以上区域随机分布）
+  flowers = [];
+  for (let i = 0; i < 24; i++) {
+    flowers.push({
+      x: Math.random() * W,
+      y: H * 0.62 + Math.random() * H * 0.35,
+      size: 3 + Math.random() * 5,
+      color: ['#ff6b8a','#ffcc4d','#ff9955','#ff88cc','#fff176'][Math.floor(Math.random()*5)],
+      sway: Math.random() * Math.PI * 2,
     });
   }
-  // 装饰食物
-  homeBgFoods = [];
-  for (let i = 0; i < 15; i++) {
-    homeBgFoods.push({
-      x: Math.random() * homeBgCanvas.width,
-      y: Math.random() * homeBgCanvas.height,
-      r: 3 + Math.random() * 3,
-      color: ['#ffaa88','#ffcc88','#aaddaa','#ffaaaa','#ffdd88'][Math.floor(Math.random()*5)],
-      vy: 0.15 + Math.random() * 0.4,
-      phase: Math.random() * Math.PI * 2,
+
+  // 只有 3 条可爱小蛇在草地上穿行
+  bgSnakes = [];
+  const snakeColors = [
+    { head: '#ff6b6b', body: '#ffb3b3' },
+    { head: '#4fc3f7', body: '#b3e5fc' },
+    { head: '#81c784', body: '#c8e6c9' },
+  ];
+  for (let i = 0; i < 3; i++) {
+    const len = 5 + i * 2;
+    const sx = Math.floor(Math.random() * 15);
+    const sy = Math.floor(2 + Math.random() * 4);
+    const segs = [];
+    for (let j = 0; j < len; j++) segs.push([sx - j, sy]);
+    bgSnakes.push({
+      segments: segs,
+      dir: [[1,0],[-1,0]][i % 2],
+      color: snakeColors[i],
+      maxLen: len,
+      yRow: sy, // 保持在同一水平线
+      speed: 0.03 + i * 0.02,
     });
   }
 }
 
+// 画白云
+function drawCloud(ctx, cx, cy, scale) {
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.beginPath();
+  const r = 22 * scale;
+  ctx.arc(cx, cy, r, 0, Math.PI*2);
+  ctx.arc(cx + r*0.7, cy - r*0.3, r*0.8, 0, Math.PI*2);
+  ctx.arc(cx + r*1.3, cy, r*0.85, 0, Math.PI*2);
+  ctx.arc(cx - r*0.4, cy + r*0.1, r*0.65, 0, Math.PI*2);
+  ctx.arc(cx + r*0.5, cy + r*0.2, r*0.7, 0, Math.PI*2);
+  ctx.fill();
+}
+
+// 画花
+function drawFlower(ctx, x, y, size, color, sway) {
+  const sx = x + Math.sin(sway) * 2;
+  const sy = y + Math.cos(sway) * 1.5;
+  // 茎
+  ctx.strokeStyle = '#7cb342';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(sx, sy); ctx.lineTo(sx, sy + size * 1.6);
+  ctx.stroke();
+  // 花瓣
+  for (let a = 0; a < 5; a++) {
+    const angle = a * Math.PI * 2 / 5;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(sx + Math.cos(angle)*size, sy + Math.sin(angle)*size, size*0.6, 0, Math.PI*2);
+    ctx.fill();
+  }
+  // 花蕊
+  ctx.fillStyle = '#fff9c4';
+  ctx.beginPath(); ctx.arc(sx, sy, size*0.45, 0, Math.PI*2); ctx.fill();
+}
+
 function animateHomeBg() {
   homeBgFrame++;
-  homeBgCtx.clearRect(0, 0, homeBgCanvas.width, homeBgCanvas.height);
   const W = homeBgCanvas.width, H = homeBgCanvas.height;
+  const cx = W * 0.85, cy = H * 0.12; // 太阳位置
 
-  // 柔和网格点
-  homeBgCtx.fillStyle = 'rgba(180,160,140,0.12)';
-  for (let x = 0; x < W; x += 40) {
-    for (let y = 0; y < H; y += 40) {
-      homeBgCtx.beginPath();
-      homeBgCtx.arc(x + Math.sin(homeBgFrame*0.02 + y*0.1)*4, y, 1.5, 0, Math.PI*2);
-      homeBgCtx.fill();
-    }
+  // 蓝天渐变
+  const sky = homeBgCtx.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, '#7ec8f8');
+  sky.addColorStop(0.5, '#b8dff8');
+  sky.addColorStop(0.65, '#c8e8d0');
+  sky.addColorStop(1, '#8bc78b');
+  homeBgCtx.fillStyle = sky;
+  homeBgCtx.fillRect(0, 0, W, H);
+
+  // 太阳和光芒
+  homeBgCtx.save();
+  homeBgCtx.translate(cx, cy);
+  homeBgCtx.rotate(homeBgFrame * 0.005);
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    const inner = 28, outer = 38;
+    homeBgCtx.strokeStyle = 'rgba(255,240,180,0.5)';
+    homeBgCtx.lineWidth = 5;
+    homeBgCtx.beginPath();
+    homeBgCtx.moveTo(Math.cos(a)*inner, Math.sin(a)*inner);
+    homeBgCtx.lineTo(Math.cos(a)*outer, Math.sin(a)*outer);
+    homeBgCtx.stroke();
   }
+  homeBgCtx.restore();
+  // 太阳本体
+  homeBgCtx.fillStyle = '#fff176';
+  homeBgCtx.beginPath(); homeBgCtx.arc(cx, cy, 32, 0, Math.PI*2); homeBgCtx.fill();
+  homeBgCtx.fillStyle = '#fff9c4';
+  homeBgCtx.beginPath(); homeBgCtx.arc(cx, cy, 24, 0, Math.PI*2); homeBgCtx.fill();
 
-  // 蛇
-  homeBgSnakes.forEach(s => {
-    // 移动
+  // 白云
+  clouds.forEach(c => {
+    c.x += c.sp;
+    if (c.x > W + 100) c.x = -100;
+    drawCloud(homeBgCtx, c.x, c.y, c.s);
+  });
+
+  // 远山（柔和曲线）
+  homeBgCtx.fillStyle = '#a8d8a0';
+  homeBgCtx.beginPath();
+  homeBgCtx.moveTo(0, H);
+  homeBgCtx.quadraticCurveTo(W*0.15, H*0.62, W*0.28, H*0.60);
+  homeBgCtx.quadraticCurveTo(W*0.40, H*0.57, W*0.55, H*0.63);
+  homeBgCtx.quadraticCurveTo(W*0.68, H*0.59, W*0.80, H*0.61);
+  homeBgCtx.quadraticCurveTo(W*0.90, H*0.58, W, H*0.62);
+  homeBgCtx.lineTo(W, H); homeBgCtx.closePath(); homeBgCtx.fill();
+
+  // 近草地
+  homeBgCtx.fillStyle = '#7ecb76';
+  homeBgCtx.beginPath();
+  homeBgCtx.moveTo(0, H*0.65);
+  homeBgCtx.bezierCurveTo(W*0.25, H*0.63, W*0.50, H*0.68, W*0.75, H*0.64);
+  homeBgCtx.lineTo(W, H*0.66); homeBgCtx.lineTo(W, H); homeBgCtx.lineTo(0, H);
+  homeBgCtx.closePath(); homeBgCtx.fill();
+
+  // 小蛇在草地上穿行
+  const groundY = H * 0.67;
+  const snakeScale = Math.min(W / 560, 1.6);
+  bgSnakes.forEach(s => {
+    if (Math.random() < 0.015) {
+      s.dir = s.dir[0] === 1 ? [-1, 0] : [1, 0];
+    }
     const head = s.segments[0];
-    let nx = head[0] + s.dir[0], ny = head[1] + s.dir[1];
-    const gw = Math.floor(W / s.cell), gh = Math.floor(H / s.cell);
-    nx = (nx + gw) % gw; ny = (ny + gh) % gh;
-    s.segments.unshift([nx, ny]);
+    let nx = head[0] + s.dir[0];
+    const maxCols = Math.floor(W / (22 * snakeScale));
+    if (nx < 0) { nx = maxCols - 1; s.dir = [-1, 0]; }
+    if (nx > maxCols - 1) { nx = 0; s.dir = [1, 0]; }
+    s.segments.unshift([nx, head[1]]);
     if (s.segments.length > s.maxLen) s.segments.pop();
 
-    // 随机转向
-    if (Math.random() < 0.02) {
-      const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
-      const opp = [-s.dir[0], -s.dir[1]];
-      const opts = dirs.filter(d => !(d[0] === opp[0] && d[1] === opp[1]));
-      s.dir = opts[Math.floor(Math.random() * opts.length)];
-    }
-
-    // 绘制
     s.segments.forEach(([sx, sy], i) => {
-      const px = sx * s.cell + 2, py = sy * s.cell + 2;
-      const sz = s.cell - 4;
-      const cx = px + sz/2, cy = py + sz/2;
+      const cell = 22 * snakeScale;
+      const px = sx * cell, py = groundY + sy * cell * 0.4;
+      const r = cell * 0.4;
       homeBgCtx.beginPath();
-      homeBgCtx.arc(cx, cy, sz/2 - 1, 0, Math.PI*2);
+      homeBgCtx.arc(px + r, py + r, r, 0, Math.PI * 2);
       homeBgCtx.fillStyle = i === 0 ? s.color.head : s.color.body;
       homeBgCtx.fill();
       if (i === 0) {
+        homeBgCtx.fillStyle = '#fff';
         homeBgCtx.beginPath();
-        homeBgCtx.arc(cx - 2, cy - 2, 2, 0, Math.PI*2);
-        homeBgCtx.fillStyle = '#fff'; homeBgCtx.fill();
+        homeBgCtx.arc(px + r + r*0.3, py + r*0.6, r*0.35, 0, Math.PI*2);
+        homeBgCtx.fill();
+        homeBgCtx.fillStyle = '#222';
+        homeBgCtx.beginPath();
+        homeBgCtx.arc(px + r + r*0.3, py + r*0.6, r*0.18, 0, Math.PI*2);
+        homeBgCtx.fill();
       }
     });
   });
 
-  // 食物漂浮
-  homeBgFoods.forEach(f => {
-    const fy = f.y + Math.sin(homeBgFrame * 0.03 + f.phase) * 15;
-    homeBgCtx.beginPath();
-    homeBgCtx.arc(f.x, fy, f.r, 0, Math.PI * 2);
-    homeBgCtx.fillStyle = f.color;
-    homeBgCtx.fill();
-    f.y -= f.vy;
-    if (f.y < -20) { f.y = H + 20; f.x = Math.random() * W; }
+  // 花朵
+  flowers.forEach(f => {
+    drawFlower(homeBgCtx, f.x, f.y, f.size, f.color, f.sway + homeBgFrame * 0.02);
   });
 
   bgAnimId = requestAnimationFrame(animateHomeBg);
@@ -772,6 +852,10 @@ function init() {
   draw();
   // 启动首页背景动画
   startHomeBg();
+  // 窗口缩放时重绘背景
+  window.addEventListener('resize', () => {
+    if (!homeOverlay.classList.contains('hidden')) initHomeBg();
+  });
 }
 
 init();
