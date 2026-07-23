@@ -13,8 +13,8 @@
     align-items: center;
     min-height: 100vh;
     min-height: 100dvh;
-    padding: 20px 0 80px 0;
-    padding-bottom: max(80px, env(safe-area-inset-bottom, 80px));
+    padding: 20px 0 100px 0;
+    padding-bottom: max(100px, calc(env(safe-area-inset-bottom, 80px) + 40px));
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
     overflow-y: auto; overflow-x: hidden;
     touch-action: none;
@@ -151,7 +151,8 @@
   .modal .close-btn { position: absolute; top: 12px; right: 16px; background: none; border: none; color: #bbb; font-size: 22px; cursor: pointer; line-height: 1; }
   .modal .close-btn:active { color: #666; }
   .skin-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
-  .skin-item { aspect-ratio: 1; border-radius: 14px; cursor: pointer; border: 2.5px solid #eee; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px; color: #777; background: #fafafa; transition: all .2s; position: relative; }
+  .skin-item { aspect-ratio: 1; border-radius: 14px; cursor: pointer; border: 2.5px solid #eee; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px; color: #777; background: #fafafa; transition: all .2s; position: relative; min-height: 64px; }
+  @supports not (aspect-ratio: 1) { .skin-item { height: 0; padding-bottom: 100%; } }
   .skin-item:active { transform: scale(0.95); background: #f0f0f0; }
   .skin-item.selected { border-color: #64dc64; background: #f0fdf0; }
   .skin-item.locked { opacity: 0.45; }
@@ -181,10 +182,10 @@
     <div class="scores">
       <span class="score" id="score">分数: 0</span>
       <span class="high" id="high">最高分: 0</span>
-      <span class="coins" id="coins">🪙 0</span>
+      <span class="coins" id="coins">金币 0</span>
     </div>
     <div class="header-right">
-      <span class="boost-badge" id="boostBadge">⚡ 加速中</span>
+      <span class="boost-badge" id="boostBadge">加速中</span>
     </div>
   </div>
   <canvas id="canvas"></canvas>
@@ -198,20 +199,21 @@
 
   <div class="footer">
     <span>↑↓←→ / WASD 移动</span>
-    <button id="btnBoost">⚡ 加速</button>
-    <button id="btnPause">⏯ 暂停</button>
-    <button id="btnRestart">↻ 重来</button>
-    <button id="footerShopBtn">🏪 商店</button>
+    <button id="btnBoost">加速</button>
+    <button id="btnPause">暂停</button>
+    <button id="btnRestart">重来</button>
+    <button id="footerShopBtn">商店</button>
   </div>
 </div>
 
 <!-- 全局静音按钮 -->
 <button id="muteBtn" style="
-  position:fixed; top:14px; right:14px; z-index:500;
+  position:fixed; top:max(14px, env(safe-area-inset-top)); right:max(14px, env(safe-area-inset-right)); z-index:500;
   background:rgba(0,0,0,0.25); border:none; color:#fff;
-  border-radius:24px; padding:6px 12px; font-size:20px;
+  border-radius:24px; padding:7px 14px; font-size:15px; font-weight:bold;
   cursor:pointer; -webkit-tap-highlight-color:transparent;
-">🔊</button>
+  letter-spacing:1px;
+">♪ 音乐</button>
 
 <!-- 卡通治愈系首页 -->
 <div class="home-overlay" id="homeOverlay">
@@ -220,27 +222,27 @@
     <div class="home-title">
       <span class="c1">贪</span><span class="c2">吃</span><span class="c3">蛇</span>
     </div>
-    <div class="home-subtitle">☀️ 阳光明媚，春暖花开 ☀️<br>和小蛇一起快乐冒险吧～</div>
-    <button class="home-enter-btn" id="homeEnterBtn">🎮 进入游戏</button>
+    <div class="home-subtitle">阳光明媚，春暖花开<br>和小蛇一起快乐冒险吧</div>
+    <button class="home-enter-btn" id="homeEnterBtn">进入游戏</button>
   </div>
 </div>
 
 <!-- 难度选择弹窗 -->
 <div class="diff-overlay hidden" id="diffOverlay">
   <div class="diff-card">
-    <h2>⚡ 选择难度</h2>
+    <h2>选择难度</h2>
     <p class="sub">选择适合你的挑战级别</p>
     <div class="diff-btns">
       <button class="diff-btn easy" id="diffEasy">
-        <span class="icon">🐣</span>
+        <span class="icon" style="color:#66bb6a;">●</span>
         <span class="info"><h3>简单模式</h3><p>悠闲节奏，轻松玩耍</p></span>
       </button>
       <button class="diff-btn medium" id="diffMedium">
-        <span class="icon">🐍</span>
+        <span class="icon" style="color:#ffa726;">●</span>
         <span class="info"><h3>中等模式</h3><p>正常速度，经典体验</p></span>
       </button>
       <button class="diff-btn hard" id="diffHard">
-        <span class="icon">💀</span>
+        <span class="icon" style="color:#ef5350;">●</span>
         <span class="info"><h3>困难模式</h3><p>场地中出现障碍物，碰到即死</p></span>
       </button>
     </div>
@@ -252,7 +254,7 @@
 <div class="overlay hidden" id="skinOverlay">
   <div class="modal">
     <button class="close-btn" id="skinClose">✕</button>
-    <h2>🎨 选择皮肤</h2>
+    <h2>选择皮肤</h2>
     <p class="rules">选择你喜欢的颜色，也可以在商店购买更多</p>
     <p class="countdown"><span id="countdownNum">5</span> 秒后自动开始</p>
     <div class="skin-grid" id="splashSkinGrid"></div>
@@ -264,8 +266,8 @@
 <div class="overlay hidden" id="shopOverlay">
   <div class="modal shop-modal">
     <button class="close-btn" id="shopClose">✕</button>
-    <h2>🏪 皮肤商店</h2>
-    <p style="font-size:13px;color:#ffd740;margin:6px 0;">🪙 <span id="shopCoins">0</span></p>
+    <h2>皮肤商店</h2>
+    <p style="font-size:13px;color:#ffd740;margin:6px 0;">金币 <span id="shopCoins">0</span></p>
     <div class="skin-grid" id="shopSkinGrid"></div>
     <p id="shopMsg" style="font-size:12px;color:#888;min-height:18px;margin:4px 0;"></p>
     <button class="close-shop-btn" id="shopCloseBtn">关闭商店</button>
@@ -275,7 +277,7 @@
 <!-- 确认重来弹窗 -->
 <div class="confirm-overlay hidden" id="confirmOverlay">
   <div class="confirm-card">
-    <h3>⚠️ 重来</h3>
+    <h3>重来</h3>
     <p>重来会退出本局游戏<br>清空当前进度</p>
     <div class="confirm-btns">
       <button class="btn-cancel" id="confirmCancel">返回游戏</button>
@@ -354,7 +356,7 @@ function sfxDeath() {
 let bgmMuted = false;
 function toggleMute() {
   bgmMuted = !bgmMuted;
-  document.getElementById('muteBtn').textContent = bgmMuted ? '🔇' : '🔊';
+  document.getElementById('muteBtn').textContent = bgmMuted ? '♪ 静音' : '♪ 音乐';
   // 直接控制音量，不停止/重启 BGM
   if (homeBGM && homeBGM.masterGain) homeBGM.masterGain.gain.value = bgmMuted ? 0 : 0.07;
   if (gameBGM && gameBGM.masterGain) gameBGM.masterGain.gain.value = bgmMuted ? 0 : 0.12;
@@ -510,7 +512,7 @@ const SKINS = [
   { id: 'white',    name: '珍珠白', head: '#e8e8e8', body: '#b0b0b0', price: 100 },
   { id: 'mint',     name: '薄荷青', head: '#42f5c8', body: '#20c090', price: 100 },
   { id: 'gray',     name: '烟灰',   head: '#888888', body: '#666666', price: 100 },
-  { id: 'aurora',   name: '🌈极光', head: null, body: null, price: 500, premium: true },
+  { id: 'aurora',   name: '极光', head: null, body: null, price: 500, premium: true },
 ];
 
 // ==================== 存档管理 ====================
@@ -556,7 +558,7 @@ let obstacles = [];        // 障碍物 [{x, y, timer}]
 let obstacleTimer = 0;
 
 function updateCoinDisplay() {
-  coinsEl.textContent = `🪙 ${saveData.coins}`;
+  coinsEl.textContent = `金币 ${saveData.coins}`;
 }
 
 function reset() {
@@ -733,7 +735,7 @@ function draw() {
     ctx.fillStyle = '#ddd'; ctx.fillText(`得分: ${score}`, canvas.width / 2, canvas.height / 2 - 14);
     if (earned > 0) {
       ctx.font = '16px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
-      ctx.fillStyle = '#ffd740'; ctx.fillText(`🪙 +${earned}`, canvas.width / 2, canvas.height / 2 + 16);
+      ctx.fillStyle = '#ffd740'; ctx.fillText(`金币 +${earned}`, canvas.width / 2, canvas.height / 2 + 16);
     }
     // 重新开始按钮
     const btnW = 160, btnH = 44;
@@ -915,7 +917,7 @@ function renderSkinGrid(container, onSelect) {
     div.innerHTML = `
       <div class="swatch" style="background:${previewColor};background-size:cover;"></div>
       <span>${skin.name}</span>
-      ${!owned ? `<span class="price">🪙${skin.price}</span>` : (equipped ? '<span class="equipped-mark">✓ 使用中</span>' : '<span class="owned-mark">✅</span>')}
+      ${!owned ? `<span class="price">${skin.price}金币</span>` : (equipped ? '<span class="equipped-mark">✓ 使用中</span>' : '<span class="owned-mark">已拥有</span>')}
     `;
     div.addEventListener('click', () => { sfxClick(); onSelect(skin, owned, equipped); });
     container.appendChild(div);
@@ -1264,7 +1266,7 @@ function renderShopGrid() {
       renderSplashSkinGrid();
       msgEl.textContent = `购买成功！已装备「${skin.name}」`;
     } else {
-      msgEl.textContent = `金币不足，还需要 ${skin.price - saveData.coins} 🪙`;
+      msgEl.textContent = `金币不足，还需要 ${skin.price - saveData.coins} 金币`;
     }
   });
 }
