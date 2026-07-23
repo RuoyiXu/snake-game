@@ -87,6 +87,41 @@
   .home-enter-btn:active { transform: translateY(3px); box-shadow: 0 3px 0 #d94444, 0 4px 12px rgba(0,0,0,0.15); }
   @keyframes btnBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
 
+  /* ====== 难度选择弹窗 ====== */
+  .diff-overlay {
+    position: fixed; inset: 0; z-index: 150;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    overflow: hidden;
+    background: rgba(0,0,0,0.45);
+  }
+  .diff-overlay.hidden { display: none; }
+  .diff-card {
+    background: rgba(255,255,255,0.92);
+    border-radius: 24px; padding: 28px 22px 24px; max-width: 380px; width: 90%; text-align: center;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+  }
+  .diff-card h2 { font-size: 24px; color: #555; margin-bottom: 6px; }
+  .diff-card .sub { font-size: 13px; color: #aaa; margin-bottom: 16px; }
+  .diff-btns { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+  .diff-btn {
+    border: 2.5px solid #e0e0e0; border-radius: 16px; padding: 14px 16px;
+    cursor: pointer; font-family: inherit; text-align: left;
+    background: #fafafa; transition: all .15s;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .diff-btn:active { transform: scale(0.97); }
+  .diff-btn.easy { border-color: #a5d6a7; background: #f1f8f1; }
+  .diff-btn.easy:active, .diff-btn.easy:hover { border-color: #66bb6a; background: #e8f5e9; }
+  .diff-btn.medium { border-color: #ffcc80; background: #fff8f1; }
+  .diff-btn.medium:active, .diff-btn.medium:hover { border-color: #ffa726; background: #fff3e0; }
+  .diff-btn.hard { border-color: #ef9a9a; background: #fff1f1; }
+  .diff-btn.hard:active, .diff-btn.hard:hover { border-color: #ef5350; background: #ffebee; }
+  .diff-btn .icon { font-size: 36px; flex-shrink: 0; }
+  .diff-btn .info h3 { font-size: 17px; color: #444; margin-bottom: 2px; }
+  .diff-btn .info p { font-size: 12px; color: #999; }
+  .diff-back { background: none; border: none; color: #999; font-size: 14px; cursor: pointer; font-family: inherit; margin-top: 4px; }
+  .diff-back:active { color: #666; }
+
   /* ====== 皮肤选择弹窗 ====== */
   .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; }
   .overlay.hidden { display: none; }
@@ -165,6 +200,30 @@
   </div>
 </div>
 
+<!-- 难度选择弹窗 -->
+<div class="diff-overlay hidden" id="diffOverlay">
+  <canvas class="home-bg-canvas" id="diffBgCanvas"></canvas>
+  <div class="diff-card">
+    <h2>⚡ 选择难度</h2>
+    <p class="sub">选择适合你的挑战级别</p>
+    <div class="diff-btns">
+      <button class="diff-btn easy" id="diffEasy">
+        <span class="icon">🐣</span>
+        <span class="info"><h3>简单模式</h3><p>悠闲节奏，轻松玩耍</p></span>
+      </button>
+      <button class="diff-btn medium" id="diffMedium">
+        <span class="icon">🐍</span>
+        <span class="info"><h3>中等模式</h3><p>正常速度，经典体验</p></span>
+      </button>
+      <button class="diff-btn hard" id="diffHard">
+        <span class="icon">💀</span>
+        <span class="info"><h3>困难模式</h3><p>场地中出现障碍物，碰到即死</p></span>
+      </button>
+    </div>
+    <button class="diff-back" id="diffBack">← 返回首页</button>
+  </div>
+</div>
+
 <!-- 皮肤选择弹窗 -->
 <div class="overlay hidden" id="skinOverlay">
   <div class="modal">
@@ -227,7 +286,7 @@ const isMobile = window.matchMedia('(pointer: coarse)').matches;
 const maxCanvasSize = isMobile ? Math.min(window.innerWidth - 20, 420) : 560;
 const COLS = 20, ROWS = 20;
 const CELL = Math.floor(maxCanvasSize / COLS);
-const FPS = 10, BOOST_MULTI = 2;
+const BOOST_MULTI = 2;
 
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
@@ -242,8 +301,10 @@ const boostBadge = document.getElementById('boostBadge');
 
 // ==================== 游戏状态 ====================
 let snake, direction, nextDirection, food, score, highScore, gameOver, paused, speedBoost;
-let gameLoop;
-let touchStartX, touchStartY;
+let gameLoop, touchStartX, touchStartY;
+let difficulty = 'medium'; // 'easy' | 'medium' | 'hard'
+let obstacles = [];        // 障碍物 [{x, y, timer}]
+let obstacleTimer = 0;
 
 function updateCoinDisplay() {
   coinsEl.textContent = `🪙 ${saveData.coins}`;
@@ -255,10 +316,17 @@ function reset() {
   snake = [[sx, sy]];
   direction = [1, 0]; nextDirection = [1, 0];
   score = 0; gameOver = false; paused = false; speedBoost = false;
+  obstacles = []; obstacleTimer = 0;
   spawnFood();
   updateUI();
   updateCoinDisplay();
   boostBadge.classList.remove('active');
+}
+
+function getFPS() {
+  if (difficulty === 'easy') return 8;
+  if (difficulty === 'hard') return 12;
+  return 10; // medium
 }
 
 function spawnFood() {
@@ -282,25 +350,50 @@ function update() {
   let nx = head[0] + direction[0], ny = head[1] + direction[1];
   nx = (nx + COLS) % COLS; ny = (ny + ROWS) % ROWS;
 
-  if (snake.some(([x, y]) => x === nx && y === ny)) {
-    gameOver = true;
-    if (score > highScore) { highScore = score; localStorage.setItem('snake_high', highScore); }
-    // 结算金币
-    const earned = Math.floor(score / 10);
-    if (earned > 0) {
-      saveData.coins = (saveData.coins || 0) + earned;
-      persistSave();
-    }
-    updateCoinDisplay();
-    updateUI();
-    return;
-  }
+  // 自身碰撞
+  if (snake.some(([x, y]) => x === nx && y === ny)) { endGame(); return; }
+  // 障碍物碰撞
+  if (difficulty === 'hard' && obstacles.some(o => o.x === nx && o.y === ny)) { endGame(); return; }
+
   snake.unshift([nx, ny]);
   if (nx === food[0] && ny === food[1]) {
     score += 10;
     if (score > highScore) highScore = score;
     spawnFood();
   } else { snake.pop(); }
+  updateUI();
+
+  // 障碍物管理
+  if (difficulty === 'hard') {
+    obstacleTimer++;
+    // 每 25 帧尝试生成障碍物，场上最多 3 个
+    if (obstacleTimer % 25 === 0 && obstacles.length < 3 && snake.length > 2) {
+      const crowd = new Set(snake.map(([x, y]) => `${x},${y}`));
+      crowd.add(`${food[0]},${food[1]}`);
+      // 在场地中央区域生成
+      for (let t = 0; t < 30; t++) {
+        const ox = Math.floor(Math.random() * 8) + 6; // 6-13 列
+        const oy = Math.floor(Math.random() * 8) + 6; // 6-13 行
+        if (!crowd.has(`${ox},${oy}`) && !obstacles.some(o => o.x === ox && o.y === oy)) {
+          obstacles.push({ x: ox, y: oy, life: 50 + Math.floor(Math.random() * 30) }); // 持续 50-80 帧
+          break;
+        }
+      }
+    }
+    // 障碍物倒计时
+    obstacles = obstacles.filter(o => { o.life--; return o.life > 0; });
+  }
+}
+
+function endGame() {
+  gameOver = true;
+  if (score > highScore) { highScore = score; localStorage.setItem('snake_high', highScore); }
+  const earned = Math.floor(score / 10);
+  if (earned > 0) {
+    saveData.coins = (saveData.coins || 0) + earned;
+    persistSave();
+  }
+  updateCoinDisplay();
   updateUI();
 }
 
@@ -357,6 +450,20 @@ function draw() {
   ctx.beginPath(); ctx.arc(fx, fy, fr, 0, Math.PI * 2); ctx.fillStyle = '#ff5050'; ctx.fill();
   ctx.beginPath(); ctx.arc(fx - 3, fy - 3, fr / 3, 0, Math.PI * 2); ctx.fillStyle = '#ffb4b4'; ctx.fill();
 
+  // 障碍物（困难模式）
+  obstacles.forEach(o => {
+    const ox = o.x * CELL + 2, oy = o.y * CELL + 2, os = CELL - 4;
+    const alpha = o.life < 15 ? 0.3 + (o.life / 15) * 0.5 : 0.8; // 快消失时闪烁
+    ctx.fillStyle = `rgba(100,80,60,${alpha})`;
+    ctx.fillRect(ox, oy, os, os);
+    // 尖刺装饰
+    ctx.fillStyle = `rgba(160,60,40,${alpha})`;
+    ctx.beginPath();
+    ctx.moveTo(ox + os/2, oy); ctx.lineTo(ox + os, oy + os/2);
+    ctx.lineTo(ox + os/2, oy + os); ctx.lineTo(ox, oy + os/2);
+    ctx.closePath(); ctx.fill();
+  });
+
   // 蛇（应用皮肤）
   const skin = SKINS.find(s => s.id === saveData.equipped) || SKINS[0];
   snake.forEach(([x, y], i) => {
@@ -408,7 +515,8 @@ function draw() {
 function tick() {
   update();
   draw();
-  const delay = 1000 / (speedBoost ? FPS * BOOST_MULTI : FPS);
+  const baseFPS = getFPS();
+  const delay = 1000 / (speedBoost ? baseFPS * BOOST_MULTI : baseFPS);
   gameLoop = setTimeout(tick, delay);
 }
 
@@ -731,11 +839,54 @@ function stopHomeBg() {
 }
 
 // ==================== 登录流程 ====================
+const diffOverlay = document.getElementById('diffOverlay');
+const diffBgCanvas = document.getElementById('diffBgCanvas');
 const skinOverlay = document.getElementById('skinOverlay');
 let skinTimer = 5, skinInterval, skinDismissed = false;
+let diffBgAnimId;
 
-function showSkinSelect() {
+// 难度选择背景（复用首页背景动画）
+function startDiffBg() {
+  diffBgCanvas.width = window.innerWidth;
+  diffBgCanvas.height = window.innerHeight;
+  const diffCtx = diffBgCanvas.getContext('2d');
+  homeBgCanvas.width = diffBgCanvas.width;
+  homeBgCanvas.height = diffBgCanvas.height;
+  initHomeBg();
+  animateHomeBg();
+  // 同步拷贝到难度背景画布
+  function syncBg() {
+    if (diffOverlay.classList.contains('hidden')) return;
+    diffCtx.clearRect(0, 0, diffBgCanvas.width, diffBgCanvas.height);
+    diffCtx.drawImage(homeBgCanvas, 0, 0);
+    diffBgAnimId = requestAnimationFrame(syncBg);
+  }
+  syncBg();
+}
+function stopDiffBg() {
+  if (diffBgAnimId) cancelAnimationFrame(diffBgAnimId);
+}
+
+// 首页「进入游戏」→ 难度选择
+document.getElementById('homeEnterBtn').addEventListener('click', () => {
   homeOverlay.classList.add('hidden');
+  diffOverlay.classList.remove('hidden');
+  startDiffBg();
+});
+
+// 难度选择 → 返回首页
+document.getElementById('diffBack').addEventListener('click', () => {
+  diffOverlay.classList.add('hidden');
+  stopDiffBg();
+  homeOverlay.classList.remove('hidden');
+  startHomeBg();
+});
+
+// 选择难度 → 进入皮肤选择
+function selectDifficulty(level) {
+  difficulty = level;
+  diffOverlay.classList.add('hidden');
+  stopDiffBg();
   stopHomeBg();
   skinOverlay.classList.remove('hidden');
   skinDismissed = false;
@@ -744,15 +895,14 @@ function showSkinSelect() {
   renderSplashSkinGrid();
   skinInterval = setInterval(() => {
     skinTimer--;
-    if (skinTimer <= 0) {
-      clearInterval(skinInterval);
-      document.getElementById('countdownNum').textContent = '0';
-      enterGame();
-    } else {
-      document.getElementById('countdownNum').textContent = skinTimer;
-    }
+    if (skinTimer <= 0) { clearInterval(skinInterval); document.getElementById('countdownNum').textContent = '0'; enterGame(); }
+    else { document.getElementById('countdownNum').textContent = skinTimer; }
   }, 1000);
 }
+
+document.getElementById('diffEasy').addEventListener('click', () => selectDifficulty('easy'));
+document.getElementById('diffMedium').addEventListener('click', () => selectDifficulty('medium'));
+document.getElementById('diffHard').addEventListener('click', () => selectDifficulty('hard'));
 
 function enterGame() {
   if (skinDismissed) return;
@@ -765,7 +915,6 @@ function enterGame() {
   tick();
 }
 
-document.getElementById('homeEnterBtn').addEventListener('click', showSkinSelect);
 document.getElementById('skinClose').addEventListener('click', enterGame);
 document.getElementById('skinStart').addEventListener('click', enterGame);
 
