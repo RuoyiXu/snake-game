@@ -389,14 +389,20 @@ function endGame(){
 
 // ==================== AI BFS ====================
 function aiFindPath(snakeBody,foodPos,obsCells){
+  const head=snakeBody[0];
   const occupied=new Set(snakeBody.map(([x,y])=>`${x},${y}`));
   obsCells.forEach(c=>occupied.add(`${c.x},${c.y}`));
-  const head=snakeBody[0];
   const queue=[[head[0],head[1]]],prev={},visited=new Set([`${head[0]},${head[1]}`]);
-  let found=null;
   while(queue.length){
     const [cx,cy]=queue.shift();
-    if(cx===foodPos[0]&&cy===foodPos[1]){found=[cx,cy];break}
+    if(cx===foodPos[0]&&cy===foodPos[1]){
+      // 回溯路径：每一步存 [x,y]
+      const path=[];let cur=`${cx},${cy}`;
+      while(cur!==`${head[0]},${head[1]}`){
+        const p=cur.split(',').map(Number);path.unshift(p);cur=prev[cur];
+      }
+      return path;
+    }
     for(const[dx,dy]of[[0,-1],[0,1],[-1,0],[1,0]]){
       let nx=cx+dx,ny=cy+dy;
       nx=(nx+COLS)%COLS;ny=(ny+ROWS)%ROWS;
@@ -406,10 +412,7 @@ function aiFindPath(snakeBody,foodPos,obsCells){
       }
     }
   }
-  if(!found)return null;
-  const path=[];let cur=`${found[0]},${found[1]}`;
-  while(cur&&cur!==`${head[0]},${head[1]}`){const[p]=cur.split(',');path.unshift(parseInt(p));cur=prev[cur]}
-  return path;
+  return null;
 }
 
 function updateAI(){
@@ -417,17 +420,16 @@ function updateAI(){
   const head=aiSnake[0];
   const obsCells=[];obstacles.forEach(o=>{if(o.state==='solid')o.cells.forEach(c=>obsCells.push(c))});
   const path=aiFindPath(aiSnake,food,obsCells);
-  if(path&&path.length>0){
-    let nx=parseInt(path[0]),ny=parseInt(path[1]);
-    // 确定方向
-    if(nx===head[0]-1||(head[0]===0&&nx===COLS-1))aiDir=[-1,0];
-    else if(nx===head[0]+1||(head[0]===COLS-1&&nx===0))aiDir=[1,0];
-    else if(ny===head[1]-1||(head[1]===0&&ny===ROWS-1))aiDir=[0,-1];
-    else if(ny===head[1]+1||(head[1]===ROWS-1&&ny===0))aiDir=[0,1];
+  if(path&&path.length>=1){
+    const [tx,ty]=path[0]; // 下一步目标坐标
+    let dx=tx-head[0],dy=ty-head[1];
+    // 处理穿越边界情況
+    if(Math.abs(dx)>1)dx=dx>0?-1:1;
+    if(Math.abs(dy)>1)dy=dy>0?-1:1;
+    if(dx!==0||dy!==0)aiDir=[dx,dy];
   }
   let nx=head[0]+aiDir[0],ny=head[1]+aiDir[1];
   nx=(nx+COLS)%COLS;ny=(ny+ROWS)%ROWS;
-  // 自碰或碰障碍即死
   if(aiSnake.some(([x,y])=>x===nx&&y===ny)){aiAlive=false;return}
   if(obstacles.some(o=>o.state==='solid'&&o.cells.some(c=>c.x===nx&&c.y===ny))){aiAlive=false;return}
   aiSnake.unshift([nx,ny]);
