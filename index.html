@@ -416,8 +416,8 @@ function sfxDeath() {
 function getMaxBeans(mode) {
   return (saveData.unlocks && saveData.unlocks[mode]) || 0;
 }
-// 开发者模式
-let devMode = !!saveData.devMode;
+// 开发者模式（loadSave 之后初始化）
+let devMode = false;
 function isDiffUnlocked(mode) {
   if (devMode) return true;
   if (mode === 'easy') return true;
@@ -629,6 +629,7 @@ function persistSave() { localStorage.setItem('snake_save', JSON.stringify(saveD
 function getEquippedSkin() { return SKINS.find(s => s.id === saveData.equipped) || SKINS[0]; }
 
 loadSave();
+devMode = !!saveData.devMode;
 
 // ==================== 画布初始化 ====================
 const isMobile = window.matchMedia('(pointer: coarse)').matches;
