@@ -558,7 +558,7 @@ document.addEventListener('keydown', e => {
   else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D'){ e.preventDefault(); if (direction[0] !== -1) nextDirection = [1, 0]; }
   else if (e.key === ' ') { e.preventDefault(); if (!gameOver) speedBoost = true; }
   else if (e.key === 'p' || e.key === 'P') { e.preventDefault(); if (!gameOver) paused = !paused; }
-  else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); if (gameOver) showConfirmRestart(); }
+  else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); showConfirmRestart(); }
 });
 document.addEventListener('keyup', e => {
   if (e.key === ' ') { e.preventDefault(); speedBoost = false; }
@@ -571,12 +571,14 @@ updateUI = function() { origUpdateUI(); boostBadge.classList.toggle('active', sp
 
 // ==================== 重来确认弹窗 ====================
 const confirmOverlay = document.getElementById('confirmOverlay');
+let wasPausedByConfirm = false;
 function showConfirmRestart() {
-  if (!gameOver) return;
+  if (!gameOver && !paused) { paused = true; wasPausedByConfirm = true; }
   confirmOverlay.classList.remove('hidden');
 }
 function hideConfirmRestart() {
   confirmOverlay.classList.add('hidden');
+  if (wasPausedByConfirm) { paused = false; wasPausedByConfirm = false; }
 }
 function confirmRestart() {
   hideConfirmRestart();
@@ -663,7 +665,7 @@ document.getElementById('btnBoost').addEventListener('pointerdown', () => { if (
 document.getElementById('btnBoost').addEventListener('pointerup', () => { speedBoost = false; });
 document.getElementById('btnBoost').addEventListener('pointerleave', () => { speedBoost = false; });
 document.getElementById('btnPause').addEventListener('click', () => { if (!gameOver) paused = !paused; });
-document.getElementById('btnRestart').addEventListener('click', () => { if (gameOver) showConfirmRestart(); });
+document.getElementById('btnRestart').addEventListener('click', showConfirmRestart);
 
 // ==================== 皮肤选择网格（复用组件） ====================
 function renderSkinGrid(container, onSelect) {
