@@ -684,9 +684,16 @@ function getFPS() {
 
 function spawnFood() {
   const occupied = new Set(snake.map(([x, y]) => `${x},${y}`));
+  // 排除所有障碍物位置（幽灵和实体都排除）
+  obstacles.forEach(o => o.cells.forEach(c => occupied.add(`${c.x},${c.y}`)));
   let pos;
-  do { pos = [Math.floor(Math.random() * COLS), Math.floor(Math.random() * ROWS)]; }
-  while (occupied.has(`${pos[0]},${pos[1]}`));
+  let tries = 0;
+  do {
+    pos = [Math.floor(Math.random() * COLS), Math.floor(Math.random() * ROWS)];
+    tries++;
+    // 防止死循环（场地被塞满）
+    if (tries > 500) break;
+  } while (occupied.has(`${pos[0]},${pos[1]}`));
   food = pos;
 }
 
