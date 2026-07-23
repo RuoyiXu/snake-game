@@ -278,6 +278,192 @@
 </div>
 
 <script>
+// ==================== 音效系统 ====================
+let audioCtx = null;
+function ensureAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+// 短促清脆点击音效
+function sfxClick() {
+  try {
+    const ctx = ensureAudio();
+    const t = ctx.currentTime;
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(1800, t); o.frequency.exponentialRampToValueAtTime(800, t + 0.06);
+    g.gain.setValueAtTime(0.12, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(t); o.stop(t + 0.06);
+  } catch(e) {}
+}
+
+// 吃到食物音效
+function sfxEat() {
+  try {
+    const ctx = ensureAudio();
+    const t = ctx.currentTime;
+    [0, 0.07].forEach((d, i) => {
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(i === 0 ? 600 : 900, t + d);
+      g.gain.setValueAtTime(0.15, t + d);
+      g.gain.exponentialRampToValueAtTime(0.001, t + d + 0.1);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(t + d); o.stop(t + d + 0.12);
+    });
+  } catch(e) {}
+}
+
+// 死亡音效
+function sfxDeath() {
+  try {
+    const ctx = ensureAudio();
+    const t = ctx.currentTime;
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(400, t);
+    o.frequency.exponentialRampToValueAtTime(60, t + 0.5);
+    g.gain.setValueAtTime(0.18, t);
+    g.gain.linearRampToValueAtTime(0.001, t + 0.5);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(t); o.stop(t + 0.5);
+  } catch(e) {}
+}
+
+// ==================== 首页 BGM（轻松欢快） ====================
+let homeBGM = null;
+function startHomeBGM() {
+  try {
+    const ctx = ensureAudio();
+    stopHomeBGM();
+    const masterGain = ctx.createGain();
+    masterGain.gain.value = 0.09;
+    masterGain.connect(ctx.destination);
+
+    // 简单旋律循环（C大调音阶风格）
+    const notes = [523,659,784,659,523,587,659,523, 440,523,587,523,440,392,440,523];
+    const noteLen = 0.25;
+    const loopLen = notes.length * noteLen;
+    let startTime = ctx.currentTime + 0.2;
+
+    function scheduleLoop() {
+      if (!homeBGM || homeBGM.stopped) return;
+      const t = startTime;
+      notes.forEach((freq, i) => {
+        const o = ctx.createOscillator(); const g = ctx.createGain();
+        o.type = 'triangle';
+        o.frequency.value = freq;
+        const nt = t + i * noteLen;
+        g.gain.setValueAtTime(0, nt);
+        g.gain.linearRampToValueAtTime(0.8, nt + 0.02);
+        g.gain.linearRampToValueAtTime(0.5, nt + noteLen * 0.7);
+        g.gain.exponentialRampToValueAtTime(0.001, nt + noteLen);
+        o.connect(g); g.connect(masterGain);
+        o.start(nt); o.stop(nt + noteLen);
+      });
+      // 低音和弦
+      [262, 330, 392].forEach(freq => {
+        const o = ctx.createOscillator(); const g = ctx.createGain();
+        o.type = 'sine'; o.frequency.value = freq;
+        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.25, t + 0.02);
+        g.gain.linearRampToValueAtTime(0.2, t + loopLen * 0.6);
+        g.gain.exponentialRampToValueAtTime(0.001, t + loopLen);
+        o.connect(g); g.connect(masterGain);
+        o.start(t); o.stop(t + loopLen);
+      });
+      startTime += loopLen;
+      homeBGM.timer = setTimeout(scheduleLoop, loopLen * 1000 - 100);
+    }
+    homeBGM = { masterGain, stopped: false, timer: null };
+    scheduleLoop();
+  } catch(e) {}
+}
+function stopHomeBGM() {
+  if (homeBGM) { homeBGM.stopped = true; clearTimeout(homeBGM.timer); try { homeBGM.masterGain.disconnect(); } catch(e){} homeBGM = null; }
+}
+
+// ==================== 游戏 BGM（鼓点强节奏感） ====================
+let gameBGM = null;
+function startGameBGM() {
+  try {
+    const ctx = ensureAudio();
+    stopGameBGM();
+    const masterGain = ctx.createGain();
+    masterGain.gain.value = 0.12;
+    masterGain.connect(ctx.destination);
+    const bpm = 130, beat = 60 / bpm; // 每拍秒数
+
+    // 鼓声生成函数
+    function kick(t) {
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.12);
+      g.gain.setValueAtTime(1.0, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+      o.connect(g); g.connect(masterGain); o.start(t); o.stop(t + 0.2);
+    }
+    function snare(t) {
+      const bufferSize = Math.floor(ctx.sampleRate * 0.1);
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+      const src = ctx.createBufferSource(); src.buffer = buffer;
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.7, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+      const filter = ctx.createBiquadFilter(); filter.type = 'highpass'; filter.frequency.value = 800;
+      src.connect(filter); filter.connect(g); g.connect(masterGain);
+      src.start(t); src.stop(t + 0.1);
+    }
+    function hihat(t) {
+      const bufferSize = Math.floor(ctx.sampleRate * 0.04);
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+      const src = ctx.createBufferSource(); src.buffer = buffer;
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.3, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
+      const filter = ctx.createBiquadFilter(); filter.type = 'highpass'; filter.frequency.value = 5000;
+      src.connect(filter); filter.connect(g); g.connect(masterGain);
+      src.start(t); src.stop(t + 0.04);
+    }
+    function bassLine(t, len) {
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.type = 'sawtooth'; o.frequency.value = 65;
+      g.gain.setValueAtTime(0.15, t); g.gain.linearRampToValueAtTime(0.1, t + len * 0.8);
+      g.gain.exponentialRampToValueAtTime(0.001, t + len);
+      const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 200;
+      o.connect(filter); filter.connect(g); g.connect(masterGain);
+      o.start(t); o.stop(t + len);
+    }
+
+    // 鼓点编排: 2小节循环 (8拍)
+    const loopLen = beat * 8;
+    const pattern = [
+      // [时间(拍), 类型]
+      [0,'kick'],[0,'hh'],[1,'hh'],[2,'snare'],[2,'hh'],[3,'hh'],
+      [4,'kick'],[4,'hh'],[5,'hh'],[5,'kick'],[6,'snare'],[6,'hh'],[7,'hh'],
+    ];
+    let startTime = ctx.currentTime + 0.1;
+
+    function scheduleLoop() {
+      if (!gameBGM || gameBGM.stopped) return;
+      const t = startTime;
+      pattern.forEach(([pt, type]) => {
+        const nt = t + pt * beat;
+        if (type === 'kick') kick(nt);
+        else if (type === 'snare') snare(nt);
+        else if (type === 'hh') hihat(nt + (Math.random() * 0.008));
+      });
+      bassLine(t, loopLen);
+      startTime += loopLen;
+      gameBGM.timer = setTimeout(scheduleLoop, loopLen * 1000 - 50);
+    }
+    gameBGM = { masterGain, stopped: false, timer: null };
+    scheduleLoop();
+  } catch(e) {}
+}
+function stopGameBGM() {
+  if (gameBGM) { gameBGM.stopped = true; clearTimeout(gameBGM.timer); try { gameBGM.masterGain.disconnect(); } catch(e){} gameBGM = null; }
+}
+
 // ==================== 皮肤数据 ====================
 const SKINS = [
   { id: 'green',    name: '经典绿', head: '#64dc64', body: '#3cb43c', price: 0 },
@@ -389,6 +575,7 @@ function update() {
   if (nx === food[0] && ny === food[1]) {
     score += 10;
     if (score > highScore) highScore = score;
+    sfxEat();
     spawnFood();
   } else { snake.pop(); }
   updateUI();
@@ -417,6 +604,7 @@ function update() {
 
 function endGame() {
   gameOver = true;
+  sfxDeath();
   if (score > highScore) { highScore = score; localStorage.setItem('snake_high', highScore); }
   const earned = Math.floor(score / 10);
   if (earned > 0) {
@@ -552,13 +740,13 @@ function tick() {
 
 // ==================== 输入处理 ====================
 document.addEventListener('keydown', e => {
-  if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W')    { e.preventDefault(); if (direction[1] !== 1)  nextDirection = [0, -1]; }
-  else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') { e.preventDefault(); if (direction[1] !== -1) nextDirection = [0, 1]; }
-  else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') { e.preventDefault(); if (direction[0] !== 1)  nextDirection = [-1, 0]; }
-  else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D'){ e.preventDefault(); if (direction[0] !== -1) nextDirection = [1, 0]; }
-  else if (e.key === ' ') { e.preventDefault(); if (!gameOver) speedBoost = true; }
-  else if (e.key === 'p' || e.key === 'P') { e.preventDefault(); if (!gameOver) paused = !paused; }
-  else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); showConfirmRestart(); }
+  if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W')    { e.preventDefault(); if (direction[1] !== 1)  { nextDirection = [0, -1]; sfxClick(); } }
+  else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') { e.preventDefault(); if (direction[1] !== -1) { nextDirection = [0, 1]; sfxClick(); } }
+  else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') { e.preventDefault(); if (direction[0] !== 1)  { nextDirection = [-1, 0]; sfxClick(); } }
+  else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D'){ e.preventDefault(); if (direction[0] !== -1) { nextDirection = [1, 0]; sfxClick(); } }
+  else if (e.key === ' ') { e.preventDefault(); if (!gameOver) { speedBoost = true; sfxClick(); } }
+  else if (e.key === 'p' || e.key === 'P') { e.preventDefault(); if (!gameOver) { paused = !paused; sfxClick(); } }
+  else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); showConfirmRestart(); sfxClick(); }
 });
 document.addEventListener('keyup', e => {
   if (e.key === ' ') { e.preventDefault(); speedBoost = false; }
@@ -586,10 +774,12 @@ function confirmRestart() {
   gameOver = true;
   difficulty = 'medium';
   obstacles = []; obstacleTimer = 0;
+  stopGameBGM();
+  startHomeBGM();
   diffOverlay.classList.remove('hidden');
 }
-document.getElementById('confirmCancel').addEventListener('click', hideConfirmRestart);
-document.getElementById('confirmOk').addEventListener('click', confirmRestart);
+document.getElementById('confirmCancel').addEventListener('click', () => { sfxClick(); hideConfirmRestart(); });
+document.getElementById('confirmOk').addEventListener('click', () => { sfxClick(); confirmRestart(); });
 
 // 在游戏结束遮罩上覆盖一个 DOM 按钮（比 canvas 点击更可靠）
 const gameOverBtn = document.createElement('button');
@@ -601,7 +791,7 @@ gameOverBtn.style.cssText = `
   font-size:18px; font-weight:bold; padding:11px 0; cursor:pointer;
   font-family:inherit; letter-spacing:1px;
 `;
-gameOverBtn.addEventListener('click', showConfirmRestart);
+gameOverBtn.addEventListener('click', () => { sfxClick(); showConfirmRestart(); });
 document.querySelector('.game-wrapper').appendChild(gameOverBtn);
 
 function syncGameOverBtn() {
@@ -647,10 +837,12 @@ function bindDpad(id, dir) {
   const btn = document.getElementById(id);
   btn.addEventListener('pointerdown', e => {
     e.preventDefault();
-    if (dir[0] === 1 && direction[0] !== -1)  nextDirection = [1, 0];
-    if (dir[0] === -1 && direction[0] !== 1)  nextDirection = [-1, 0];
-    if (dir[1] === 1 && direction[1] !== -1)  nextDirection = [0, 1];
-    if (dir[1] === -1 && direction[1] !== 1)  nextDirection = [0, -1];
+    let c = false;
+    if (dir[0] === 1 && direction[0] !== -1)  { nextDirection = [1, 0]; c = true; }
+    if (dir[0] === -1 && direction[0] !== 1)  { nextDirection = [-1, 0]; c = true; }
+    if (dir[1] === 1 && direction[1] !== -1)  { nextDirection = [0, 1]; c = true; }
+    if (dir[1] === -1 && direction[1] !== 1)  { nextDirection = [0, -1]; c = true; }
+    if (c) sfxClick();
     if (gameOver) return;
     clearTimeout(longPressTimer);
     longPressTimer = setTimeout(() => { speedBoost = true; boostBadge.classList.add('active'); }, LONG_PRESS_DELAY);
@@ -661,11 +853,11 @@ function bindDpad(id, dir) {
 bindDpad('btnUp', [0, -1]); bindDpad('btnDown', [0, 1]); bindDpad('btnLeft', [-1, 0]); bindDpad('btnRight', [1, 0]);
 
 // ==================== 底部按钮 ====================
-document.getElementById('btnBoost').addEventListener('pointerdown', () => { if (!gameOver) speedBoost = true; });
+document.getElementById('btnBoost').addEventListener('pointerdown', () => { sfxClick(); if (!gameOver) speedBoost = true; });
 document.getElementById('btnBoost').addEventListener('pointerup', () => { speedBoost = false; });
 document.getElementById('btnBoost').addEventListener('pointerleave', () => { speedBoost = false; });
-document.getElementById('btnPause').addEventListener('click', () => { if (!gameOver) paused = !paused; });
-document.getElementById('btnRestart').addEventListener('click', showConfirmRestart);
+document.getElementById('btnPause').addEventListener('click', () => { sfxClick(); if (!gameOver) paused = !paused; });
+document.getElementById('btnRestart').addEventListener('click', () => { sfxClick(); showConfirmRestart(); });
 
 // ==================== 皮肤选择网格（复用组件） ====================
 function renderSkinGrid(container, onSelect) {
@@ -681,7 +873,7 @@ function renderSkinGrid(container, onSelect) {
       <span>${skin.name}</span>
       ${!owned ? `<span class="price">🪙${skin.price}</span>` : (equipped ? '<span class="equipped-mark">✓ 使用中</span>' : '<span class="owned-mark">✅</span>')}
     `;
-    div.addEventListener('click', () => onSelect(skin, owned, equipped));
+    div.addEventListener('click', () => { sfxClick(); onSelect(skin, owned, equipped); });
     container.appendChild(div);
   });
 }
@@ -893,6 +1085,7 @@ function animateHomeBg() {
 function startHomeBg() {
   initHomeBg();
   animateHomeBg();
+  startHomeBGM();
 }
 function stopHomeBg() {
   if (bgAnimId) cancelAnimationFrame(bgAnimId);
@@ -905,13 +1098,16 @@ let skinTimer = 5, skinInterval, skinDismissed = false;
 
 // 首页「进入游戏」→ 难度选择
 document.getElementById('homeEnterBtn').addEventListener('click', () => {
+  sfxClick();
   homeOverlay.classList.add('hidden');
   stopHomeBg();
+  stopHomeBGM();
   diffOverlay.classList.remove('hidden');
 });
 
 // 难度选择 → 返回首页
 document.getElementById('diffBack').addEventListener('click', () => {
+  sfxClick();
   diffOverlay.classList.add('hidden');
   homeOverlay.classList.remove('hidden');
   startHomeBg();
@@ -933,9 +1129,9 @@ function selectDifficulty(level) {
   }, 1000);
 }
 
-document.getElementById('diffEasy').addEventListener('click', () => selectDifficulty('easy'));
-document.getElementById('diffMedium').addEventListener('click', () => selectDifficulty('medium'));
-document.getElementById('diffHard').addEventListener('click', () => selectDifficulty('hard'));
+document.getElementById('diffEasy').addEventListener('click', () => { sfxClick(); selectDifficulty('easy'); });
+document.getElementById('diffMedium').addEventListener('click', () => { sfxClick(); selectDifficulty('medium'); });
+document.getElementById('diffHard').addEventListener('click', () => { sfxClick(); selectDifficulty('hard'); });
 
 function enterGame() {
   if (skinDismissed) return;
@@ -944,12 +1140,14 @@ function enterGame() {
   skinOverlay.classList.add('hidden');
   highScore = parseInt(localStorage.getItem('snake_high')) || 0;
   updateCoinDisplay();
+  stopHomeBGM();
+  startGameBGM();
   reset();
   tick();
 }
 
-document.getElementById('skinClose').addEventListener('click', enterGame);
-document.getElementById('skinStart').addEventListener('click', enterGame);
+document.getElementById('skinClose').addEventListener('click', () => { sfxClick(); enterGame(); });
+document.getElementById('skinStart').addEventListener('click', () => { sfxClick(); enterGame(); });
 
 function renderSplashSkinGrid() {
   const grid = document.getElementById('splashSkinGrid');
@@ -993,10 +1191,10 @@ function closeShop() {
   }
 }
 
-document.getElementById('shopClose').addEventListener('click', closeShop);
-document.getElementById('shopCloseBtn').addEventListener('click', closeShop);
-document.getElementById('headerShopBtn').addEventListener('click', openShop);
-document.getElementById('footerShopBtn').addEventListener('click', openShop);
+document.getElementById('shopClose').addEventListener('click', () => { sfxClick(); closeShop(); });
+document.getElementById('shopCloseBtn').addEventListener('click', () => { sfxClick(); closeShop(); });
+document.getElementById('headerShopBtn').addEventListener('click', () => { sfxClick(); openShop(); });
+document.getElementById('footerShopBtn').addEventListener('click', () => { sfxClick(); openShop(); });
 
 function renderShopGrid() {
   const grid = document.getElementById('shopSkinGrid');
