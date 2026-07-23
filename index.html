@@ -386,17 +386,6 @@ function spawnFood(){
   food=pos;
 }
 
-function endGame(){
-  gameOver=true;sfxDeath();
-  if(score>highScore){highScore=score;localStorage.setItem('snake_high',highScore)}
-  const earned=Math.floor(score/10);
-  if(earned>0){saveData.coins=(saveData.coins||0)+earned;persistSave()}
-  const beans=Math.floor(score/10);gameBeans=beans;
-  recordBeans(difficulty,beans);checkAchievements();
-  updateCoinDisplay();updateUI();updatePowerupBar();updateAIPanel();
-  saveReplay();
-}
-
 // ==================== AI BFS ====================
 function aiFindPath(snakeBody,foodPos,obsCells){
   const head=snakeBody[0];
