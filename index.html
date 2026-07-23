@@ -47,31 +47,62 @@
   .footer button { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); color: #ccc; padding: 6px 14px; border-radius: 20px; font-size: 13px; cursor: pointer; font-family: inherit; }
   .footer button:active { background: rgba(255,255,255,0.18); }
 
-  /* ====== 开局弹窗 ====== */
-  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.78); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  /* ====== 卡通治愈系首页 ====== */
+  .home-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+    background: linear-gradient(180deg, #ffe8d6 0%, #fde2c8 15%, #f8d8c0 30%, #e8f0e0 55%, #d4e8d0 75%, #c5e0c0 100%);
+    overflow: hidden;
+  }
+  .home-overlay.hidden { display: none; }
+  .home-bg-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .home-content { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; padding-bottom: max(50px, 10vh); gap: 8px; }
+  .home-title { font-size: 48px; letter-spacing: 2px; animation: titleFloat 2.5s ease-in-out infinite; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.08)); }
+  .home-subtitle { font-size: 15px; color: #a09080; margin-bottom: 12px; text-align: center; line-height: 1.6; }
+  @keyframes titleFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+  .home-enter-btn {
+    background: #ff7b7b; color: #fff; border: none; padding: 14px 52px; border-radius: 40px;
+    font-size: 20px; font-weight: bold; cursor: pointer; font-family: inherit;
+    box-shadow: 0 6px 24px rgba(255,123,123,0.35);
+    animation: btnBounce 2s ease-in-out infinite;
+    letter-spacing: 1px;
+    transition: transform .15s;
+  }
+  .home-enter-btn:active { transform: scale(0.94); }
+  @keyframes btnBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  .home-decor {
+    position: absolute; z-index: 1; pointer-events: none;
+    font-size: 28px; animation: decorFloat 4s ease-in-out infinite; opacity: 0.7;
+  }
+  @keyframes decorFloat { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-14px) rotate(8deg); } }
+
+  /* ====== 皮肤选择弹窗 ====== */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; }
   .overlay.hidden { display: none; }
-  .modal { background: #1e1e3a; border-radius: 16px; padding: 24px 20px 20px; max-width: 400px; width: 100%; color: #ddd; text-align: center; box-shadow: 0 8px 40px rgba(0,0,0,0.5); position: relative; max-height: 90vh; overflow-y: auto; }
-  .modal h2 { font-size: 22px; margin-bottom: 6px; }
-  .modal .rules { font-size: 13px; color: #aaa; margin-bottom: 10px; line-height: 1.7; }
-  .modal .countdown { font-size: 12px; color: #888; margin-bottom: 12px; }
-  .modal .countdown span { color: #ffd740; font-weight: bold; font-size: 16px; }
-  .modal .close-btn { position: absolute; top: 10px; right: 14px; background: none; border: none; color: #888; font-size: 22px; cursor: pointer; line-height: 1; }
-  .modal .close-btn:active { color: #fff; }
+  .modal { background: #fff; border-radius: 20px; padding: 24px 20px 20px; max-width: 400px; width: 100%; color: #444; text-align: center; box-shadow: 0 12px 48px rgba(0,0,0,0.18); position: relative; max-height: 90vh; overflow-y: auto; }
+  .modal h2 { font-size: 22px; margin-bottom: 6px; color: #555; }
+  .modal .rules { font-size: 13px; color: #999; margin-bottom: 10px; line-height: 1.7; }
+  .modal .countdown { font-size: 12px; color: #bbb; margin-bottom: 12px; }
+  .modal .countdown span { color: #ff7b7b; font-weight: bold; font-size: 16px; }
+  .modal .close-btn { position: absolute; top: 12px; right: 16px; background: none; border: none; color: #bbb; font-size: 22px; cursor: pointer; line-height: 1; }
+  .modal .close-btn:active { color: #666; }
   .skin-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
-  .skin-item { aspect-ratio: 1; border-radius: 12px; cursor: pointer; border: 2px solid transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px; color: #ccc; background: rgba(255,255,255,0.05); transition: border .2s; position: relative; }
-  .skin-item.selected { border-color: #64dc64; }
-  .skin-item.locked { opacity: 0.45; cursor: not-allowed; }
-  .skin-item .swatch { width: 32px; height: 32px; border-radius: 50%; }
-  .skin-item .price { font-size: 10px; color: #ffd740; }
+  .skin-item { aspect-ratio: 1; border-radius: 14px; cursor: pointer; border: 2.5px solid #eee; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px; color: #777; background: #fafafa; transition: all .2s; position: relative; }
+  .skin-item:active { transform: scale(0.95); background: #f0f0f0; }
+  .skin-item.selected { border-color: #64dc64; background: #f0fdf0; }
+  .skin-item.locked { opacity: 0.45; }
+  .skin-item .swatch { width: 32px; height: 32px; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+  .skin-item .price { font-size: 10px; color: #e8953a; }
   .skin-item .owned-mark { position: absolute; top: 4px; right: 6px; font-size: 11px; }
-  .skin-item .equipped-mark { position: absolute; bottom: 2px; font-size: 10px; color: #64dc64; }
-  .modal .start-btn { background: #64dc64; border: none; color: #111; padding: 10px 40px; border-radius: 22px; font-size: 16px; font-weight: bold; cursor: pointer; font-family: inherit; }
-  .modal .start-btn:active { background: #4db84d; }
+  .skin-item .equipped-mark { position: absolute; bottom: 2px; font-size: 10px; color: #64dc64; font-weight: bold; }
+  .modal .start-btn { background: #ff7b7b; border: none; color: #fff; padding: 12px 44px; border-radius: 28px; font-size: 16px; font-weight: bold; cursor: pointer; font-family: inherit; box-shadow: 0 4px 16px rgba(255,123,123,0.3); transition: transform .15s; }
+  .modal .start-btn:active { transform: scale(0.94); }
 
   /* ====== 商店弹窗 ====== */
   .shop-modal .skin-grid { grid-template-columns: repeat(4, 1fr); }
   .shop-modal .shop-footer { margin-top: 10px; }
-  .shop-modal .close-shop-btn { background: rgba(255,255,255,0.1); border: none; color: #ccc; padding: 8px 28px; border-radius: 18px; font-size: 14px; cursor: pointer; font-family: inherit; }
+  .shop-modal .close-shop-btn { background: #f0f0f0; border: none; color: #666; padding: 8px 28px; border-radius: 18px; font-size: 14px; cursor: pointer; font-family: inherit; }
+  .shop-modal .close-shop-btn:active { background: #e0e0e0; }
 
   @media (pointer: coarse) {
     .dpad { display: block; }
@@ -111,15 +142,32 @@
   </div>
 </div>
 
-<!-- 开局皮肤选择弹窗 -->
-<div class="overlay" id="splashOverlay">
+<!-- 卡通治愈系首页 -->
+<div class="home-overlay" id="homeOverlay">
+  <canvas class="home-bg-canvas" id="homeBgCanvas"></canvas>
+  <!-- 漂浮装饰 -->
+  <span class="home-decor" style="top:8%;left:12%;animation-delay:0s;">🍎</span>
+  <span class="home-decor" style="top:6%;right:14%;animation-delay:0.8s;">🌟</span>
+  <span class="home-decor" style="top:18%;left:22%;animation-delay:1.6s;">🫧</span>
+  <span class="home-decor" style="top:14%;right:24%;animation-delay:2.4s;">🍒</span>
+  <span class="home-decor" style="top:25%;left:8%;animation-delay:3.2s;">✨</span>
+  <span class="home-decor" style="top:22%;right:10%;animation-delay:1.2s;">🌸</span>
+  <div class="home-content">
+    <div class="home-title">🐍 贪吃蛇</div>
+    <div class="home-subtitle">滑动指尖 · 吃掉美味 · 收集金币<br>和可爱的小蛇一起冒险吧 ✨</div>
+    <button class="home-enter-btn" id="homeEnterBtn">进入游戏</button>
+  </div>
+</div>
+
+<!-- 皮肤选择弹窗 -->
+<div class="overlay hidden" id="skinOverlay">
   <div class="modal">
-    <button class="close-btn" id="splashClose">✕</button>
-    <h2>🐍 贪吃蛇</h2>
-    <p class="rules">方向键/WASD 移动｜空格键加速｜P 暂停<br>穿越边界从对面出现｜撞到自己游戏结束</p>
+    <button class="close-btn" id="skinClose">✕</button>
+    <h2>🎨 选择皮肤</h2>
+    <p class="rules">选择你喜欢的颜色，也可以在商店购买更多</p>
     <p class="countdown"><span id="countdownNum">5</span> 秒后自动开始</p>
     <div class="skin-grid" id="splashSkinGrid"></div>
-    <button class="start-btn" id="splashStart">开始游戏</button>
+    <button class="start-btn" id="skinStart">开始游戏</button>
   </div>
 </div>
 
@@ -464,25 +512,174 @@ function renderSkinGrid(container, onSelect) {
   });
 }
 
-// ==================== 开局弹窗 ====================
-const splashOverlay = document.getElementById('splashOverlay');
-let splashTimer = 5, splashInterval, splashDismissed = false;
+// ==================== 首页背景动画 ====================
+const homeOverlay = document.getElementById('homeOverlay');
+const homeBgCanvas = document.getElementById('homeBgCanvas');
+const homeBgCtx = homeBgCanvas.getContext('2d');
+let homeBgSnakes = [];
+let homeBgFoods = [];
+let homeBgFrame = 0;
+let bgAnimId;
+
+const PASTEL_COLORS = [
+  { head: '#ff9999', body: '#ffcccc' },
+  { head: '#ffbb77', body: '#ffddbb' },
+  { head: '#99cc99', body: '#ccddcc' },
+  { head: '#88b8e8', body: '#bbccf0' },
+  { head: '#e8a0d0', body: '#f0cce0' },
+  { head: '#90d0c0', body: '#c0e8e0' },
+  { head: '#f5c880', body: '#fbddb0' },
+];
+
+function initHomeBg() {
+  homeBgCanvas.width = window.innerWidth;
+  homeBgCanvas.height = window.innerHeight;
+  const cols = 30, rows = 40;
+  const cell = Math.max(18, Math.floor(Math.min(homeBgCanvas.width / cols, homeBgCanvas.height / rows)));
+  const gridW = Math.floor(homeBgCanvas.width / cell);
+  const gridH = Math.floor(homeBgCanvas.height / cell);
+
+  // 创建 5-7 条装饰蛇
+  homeBgSnakes = [];
+  const count = 5 + Math.floor(Math.random() * 3);
+  for (let i = 0; i < count; i++) {
+    const len = 4 + Math.floor(Math.random() * 8);
+    const sx = Math.floor(Math.random() * gridW);
+    const sy = Math.floor(Math.random() * gridH);
+    const segs = [];
+    for (let j = 0; j < len; j++) segs.push([sx - j, sy]);
+    homeBgSnakes.push({
+      segments: segs,
+      dir: [[1,0],[-1,0],[0,1],[0,-1]][Math.floor(Math.random()*4)],
+      color: PASTEL_COLORS[i % PASTEL_COLORS.length],
+      cell,
+      maxLen: len,
+    });
+  }
+  // 装饰食物
+  homeBgFoods = [];
+  for (let i = 0; i < 15; i++) {
+    homeBgFoods.push({
+      x: Math.random() * homeBgCanvas.width,
+      y: Math.random() * homeBgCanvas.height,
+      r: 3 + Math.random() * 3,
+      color: ['#ffaa88','#ffcc88','#aaddaa','#ffaaaa','#ffdd88'][Math.floor(Math.random()*5)],
+      vy: 0.15 + Math.random() * 0.4,
+      phase: Math.random() * Math.PI * 2,
+    });
+  }
+}
+
+function animateHomeBg() {
+  homeBgFrame++;
+  homeBgCtx.clearRect(0, 0, homeBgCanvas.width, homeBgCanvas.height);
+  const W = homeBgCanvas.width, H = homeBgCanvas.height;
+
+  // 柔和网格点
+  homeBgCtx.fillStyle = 'rgba(180,160,140,0.12)';
+  for (let x = 0; x < W; x += 40) {
+    for (let y = 0; y < H; y += 40) {
+      homeBgCtx.beginPath();
+      homeBgCtx.arc(x + Math.sin(homeBgFrame*0.02 + y*0.1)*4, y, 1.5, 0, Math.PI*2);
+      homeBgCtx.fill();
+    }
+  }
+
+  // 蛇
+  homeBgSnakes.forEach(s => {
+    // 移动
+    const head = s.segments[0];
+    let nx = head[0] + s.dir[0], ny = head[1] + s.dir[1];
+    const gw = Math.floor(W / s.cell), gh = Math.floor(H / s.cell);
+    nx = (nx + gw) % gw; ny = (ny + gh) % gh;
+    s.segments.unshift([nx, ny]);
+    if (s.segments.length > s.maxLen) s.segments.pop();
+
+    // 随机转向
+    if (Math.random() < 0.02) {
+      const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+      const opp = [-s.dir[0], -s.dir[1]];
+      const opts = dirs.filter(d => !(d[0] === opp[0] && d[1] === opp[1]));
+      s.dir = opts[Math.floor(Math.random() * opts.length)];
+    }
+
+    // 绘制
+    s.segments.forEach(([sx, sy], i) => {
+      const px = sx * s.cell + 2, py = sy * s.cell + 2;
+      const sz = s.cell - 4;
+      const cx = px + sz/2, cy = py + sz/2;
+      homeBgCtx.beginPath();
+      homeBgCtx.arc(cx, cy, sz/2 - 1, 0, Math.PI*2);
+      homeBgCtx.fillStyle = i === 0 ? s.color.head : s.color.body;
+      homeBgCtx.fill();
+      if (i === 0) {
+        homeBgCtx.beginPath();
+        homeBgCtx.arc(cx - 2, cy - 2, 2, 0, Math.PI*2);
+        homeBgCtx.fillStyle = '#fff'; homeBgCtx.fill();
+      }
+    });
+  });
+
+  // 食物漂浮
+  homeBgFoods.forEach(f => {
+    const fy = f.y + Math.sin(homeBgFrame * 0.03 + f.phase) * 15;
+    homeBgCtx.beginPath();
+    homeBgCtx.arc(f.x, fy, f.r, 0, Math.PI * 2);
+    homeBgCtx.fillStyle = f.color;
+    homeBgCtx.fill();
+    f.y -= f.vy;
+    if (f.y < -20) { f.y = H + 20; f.x = Math.random() * W; }
+  });
+
+  bgAnimId = requestAnimationFrame(animateHomeBg);
+}
+
+function startHomeBg() {
+  initHomeBg();
+  animateHomeBg();
+}
+function stopHomeBg() {
+  if (bgAnimId) cancelAnimationFrame(bgAnimId);
+}
+
+// ==================== 登录流程 ====================
+const skinOverlay = document.getElementById('skinOverlay');
+let skinTimer = 5, skinInterval, skinDismissed = false;
+
+function showSkinSelect() {
+  homeOverlay.classList.add('hidden');
+  stopHomeBg();
+  skinOverlay.classList.remove('hidden');
+  skinDismissed = false;
+  skinTimer = 5;
+  document.getElementById('countdownNum').textContent = skinTimer;
+  renderSplashSkinGrid();
+  skinInterval = setInterval(() => {
+    skinTimer--;
+    if (skinTimer <= 0) {
+      clearInterval(skinInterval);
+      document.getElementById('countdownNum').textContent = '0';
+      enterGame();
+    } else {
+      document.getElementById('countdownNum').textContent = skinTimer;
+    }
+  }, 1000);
+}
 
 function enterGame() {
-  if (splashDismissed) return;
-  splashDismissed = true;
-  clearInterval(splashInterval);
-  splashOverlay.classList.add('hidden');
+  if (skinDismissed) return;
+  skinDismissed = true;
+  clearInterval(skinInterval);
+  skinOverlay.classList.add('hidden');
   highScore = parseInt(localStorage.getItem('snake_high')) || 0;
   updateCoinDisplay();
   reset();
   tick();
 }
 
-function dismissSplash() { enterGame(); }
-
-document.getElementById('splashClose').addEventListener('click', dismissSplash);
-document.getElementById('splashStart').addEventListener('click', dismissSplash);
+document.getElementById('homeEnterBtn').addEventListener('click', showSkinSelect);
+document.getElementById('skinClose').addEventListener('click', enterGame);
+document.getElementById('skinStart').addEventListener('click', enterGame);
 
 function renderSplashSkinGrid() {
   const grid = document.getElementById('splashSkinGrid');
@@ -504,21 +701,6 @@ function renderSplashSkinGrid() {
     persistSave();
     renderSplashSkinGrid();
   });
-}
-
-function startSplashTimer() {
-  const countdownEl = document.getElementById('countdownNum');
-  countdownEl.textContent = splashTimer;
-  splashInterval = setInterval(() => {
-    splashTimer--;
-    if (splashTimer <= 0) {
-      clearInterval(splashInterval);
-      countdownEl.textContent = '0';
-      enterGame();
-    } else {
-      countdownEl.textContent = splashTimer;
-    }
-  }, 1000);
 }
 
 // ==================== 商店弹窗 ====================
@@ -579,8 +761,6 @@ function renderShopGrid() {
 
 // ==================== 启动 ====================
 function init() {
-  renderSplashSkinGrid();
-  startSplashTimer();
   updateCoinDisplay();
   // 渲染初始静态画面
   snake = [[Math.floor(COLS/2), Math.floor(ROWS/2)]];
@@ -590,6 +770,8 @@ function init() {
   spawnFood();
   updateUI();
   draw();
+  // 启动首页背景动画
+  startHomeBg();
 }
 
 init();
